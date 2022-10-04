@@ -6,6 +6,9 @@ import pip._vendor.requests #Faire des requetes HTTP
 #COUNTER
 start = time.time()
 
+# JSON Item ID with name on different languages, par TeamCraft
+itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json").json()
+
 # WORLDS
 worldsList = [39,71,80,83,85,97,400,401,33,36,42,56,66,67,402,403]
 # CHAOS:
@@ -30,11 +33,11 @@ worldsList = [39,71,80,83,85,97,400,401,33,36,42,56,66,67,402,403]
 worldsName = ["Omega", "Moogle", "Cerberus", "Louisoix", "Spriggan", "Ragnarok", "Sagittarius", "Phantom", "Twintania", "Lich", "Zordiak", "Phoenix", "Odin", "Shiva", "Alpha", "Raiden"]
 
 universalisAPI = "https://universalis.app/api/v2/"
-itemmarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
+itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
 # INPUT VARIABLES
 usWorld = 97 #(Ragnarok)
-coefMargin = 1.6 #(Coeff de marge souhaité)
+coefMargin = 2 #(Coeff de marge souhaité)
 minimumSellPrice = 30000
 
 # PROCESSUS
@@ -42,10 +45,9 @@ minimumSellPrice = 30000
 #worldsList.pop(usWorld)
 
 print("Objets interressant:")
-for item in itemmarketable: #Pour chaque item markettable
+for item in itemMarketable: #Pour chaque item markettable
 	#Je crée le dictionnaire qui va stocker tous les prix de l'item
 	pricePerWorld = {}
-	print(item)
  
 	#Je récupère le prix du serveur souhaité
 	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorld) + "/" + str(item)).json() #Je récupère l'historique d'achat de l'item dans le monde 
@@ -71,10 +73,12 @@ for item in itemmarketable: #Pour chaque item markettable
   
 	
  #Pour chaque serveur, et donc chaque prix
+	print("Vérification de valeur sur les mondes..")
 	for world, price in pricePerWorld.items():
-		print("Vérification de valeur sur les mondes..")
 		if (price <= goalPrice): #Si on a bien le coeff de marg
-			print("ID: " + str(item) + " Valeur: " + str(price) + "g Monde: " + str(world) + " Valeur dans notre monde:" + str(goalPrice * coefMargin))
+			print(str(item))
+			itemName = itemsID[item]["fr"][0]
+			print("Item: " + str(itemName) + " Valeur: " + str(price) + "g Monde: " + str(world) + " Valeur dans notre monde:" + str(goalPrice * coefMargin))
 
 	#history = pip._vendor.requests.get("https://universalis.app/api/v2/history/" +  + "2")
 	#print(history.json())
