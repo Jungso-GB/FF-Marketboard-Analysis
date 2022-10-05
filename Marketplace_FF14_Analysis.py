@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 start = time.time()
 
 # JSON Item ID with name on different languages, par TeamCraft
-itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=False).json()
+itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
 
 # WORLDS
 worldsList = [39,71,80,83,85,97,400,401,33,36,42,56,66,67,402,403]
@@ -52,7 +52,7 @@ print("Objets interressant:")
 for item in itemMarketable: #Pour chaque item markettable
 	#Je crée le dictionnaire qui va stocker tous les prix de l'item
 	pricePerWorld = {}
- 
+	print(item)
 	#Je récupère l'historique d'achat de l'item dans le monde 
 	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorld) + "/" + str(item)).json()
 	
