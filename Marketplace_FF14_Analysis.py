@@ -1,13 +1,19 @@
 # IMPORTS
 import json
 import time
+import calendar
 import sys
 import pip._vendor.requests #Faire des requetes HTTP
+from datetime import datetime
 #COUNTER
 start = time.time()
 
 # JSON Item ID with name on different languages, par TeamCraft
 itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json").json()
+# Timestamp actuel
+nowTime = datetime.now()
+print(nowTime.strftime("%H:%M:%S"))
+print(str(nowTime))
 
 # WORLDS
 worldsList = [39,71,80,83,85,97,400,401,33,36,42,56,66,67,402,403]
@@ -49,8 +55,20 @@ for item in itemMarketable: #Pour chaque item markettable
 	#Je crée le dictionnaire qui va stocker tous les prix de l'item
 	pricePerWorld = {}
  
+	#Je récupère l'historique d'achat de l'item dans le monde 
+	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorld) + "/" + str(item)).json()
+	
+	#Je prends le timestamp
+	try:
+		lastSell = serverItemData['recentHistory'][0]["timestamp"]
+	except IndexError:
+			lastSell = 'null' #Si l'article na jamais été vendu
+			continue #Passe à l'item suivant
+	
+	#Conversion du timestamp
+	lastSell = datetime.fromtimestamp(lastSell)
+	
 	#Je récupère le prix du serveur souhaité
-	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorld) + "/" + str(item)).json() #Je récupère l'historique d'achat de l'item dans le monde 
 	try:
 		goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Je détermine mon prix objectif
 	except IndexError: #Si l'item n'a jamais eu de prix défini
@@ -71,7 +89,7 @@ for item in itemMarketable: #Pour chaque item markettable
 		#Je la stocke dans un dictionnaire, où chaque prix de chaque monde sera indiqué.
 		pricePerWorld[world] = price
 
-	
+	print (pricePerWorld)
  #Pour chaque serveur, et donc chaque prix
 	print("Vérification de valeur sur les mondes..")
 	for world, price in pricePerWorld.items():
