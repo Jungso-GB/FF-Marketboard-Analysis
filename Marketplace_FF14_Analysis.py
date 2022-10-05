@@ -48,7 +48,7 @@ dayDelta = 3
 #worldsList.pop(usWorld)
 
 
-print("Objets interressant:")
+print("Objets interressants:")
 for item in itemMarketable: #Pour chaque item markettable
 	#Je crée le dictionnaire qui va stocker tous les prix de l'item
 	pricePerWorld = {}
