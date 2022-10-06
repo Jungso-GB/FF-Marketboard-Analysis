@@ -4,6 +4,7 @@ import time
 import calendar
 import os
 import shutil
+import csv
 import sys
 import pip._vendor.requests #Faire des requetes HTTP
 from datetime import datetime, timedelta
@@ -41,9 +42,9 @@ itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
 # INPUT VARIABLES
 usWorld = 97 #(Ragnarok)
-coefMargin = 1.4 #(Coeff de marge souhaité)
-minimumSellPrice = 30000
-dayDelta = 3
+coefMargin = 1.2 #(Coeff de marge souhaité)
+minimumSellPrice = 3000
+dayDelta = 6
 
 # PROCESSUS
 #Retirer notre monde, des mondes à analyser
@@ -62,6 +63,11 @@ os.chdir(filepath)
 
 print("Objets interressants:")
 for item in itemMarketable: #Pour chaque item markettable
+	
+	#(TESTING) Juste pour analyser le début des items marketable
+	if item > 1700:
+		break
+
 	#Je crée le dictionnaire qui va stocker tous les prix de l'item
 	pricePerWorld = {}
 	priceGoalSuccess = {}
@@ -99,6 +105,7 @@ for item in itemMarketable: #Pour chaque item markettable
 
 	#Je prends le nom de l'item, et le stocke dans l'itemID.json
 	itemName = itemsID[str(item)]["fr"]
+	#itemName = itemName.encode(encoding='UTF-8',errors='strict')
 	priceGoalSuccess["Name"] = itemName
 
 	#Je stocke le prix de notre monde au tout début de l'itemID.json
@@ -123,12 +130,10 @@ for item in itemMarketable: #Pour chaque item markettable
 			#Stocker dans un JSON
 			priceGoalSuccess[world] = price
 			
-			#print("Item: " + str(itemName) + " Valeur: " + str(price) + "g Monde: " + str(world) + " Valeur dans notre monde:" + str(goalPrice * coefMargin))
-
 #Je crée le fichier itemID.json où je stocke les prix interressants avec leur mondes
-	with open(str(item) +'.json', 'a') as file:
-		file.write(json.dumps(priceGoalSuccess, indent=4))
-
+	with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
+		file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
+#Après que chaque item est été regardé 
  #End of the script
 end = time.time()
-print(end - start)
+print("Durée du scan: " + str(round(end - start)) + "s")

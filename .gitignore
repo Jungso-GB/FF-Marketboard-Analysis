@@ -3,6 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
+#UsIgnore File/Folders
+./items/
+
 # User-specific files
 *.rsuser
 *.suo
@@ -363,3 +366,11 @@ MigrationBackup/
 FodyWeavers.xsd
 items/1879.json
 items/1942.json
+items/1603.json
+items/1625.json
+items/1633.json
+items/1636.json
+items/1643.json
+items/1659.json
+items/1663.json
+items/1670.json
