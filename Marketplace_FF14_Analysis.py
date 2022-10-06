@@ -39,9 +39,9 @@ itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
 # INPUT VARIABLES
 usWorldID = 97 #(Ragnarok)
-coefMargin = 1.2 #(Coeff de marge souhaité)
-minimumSellPrice = 3000
-dayDelta = 6
+coefMargin = 1.8 #(Coeff de marge souhaité)
+minimumSellPrice = 6000
+dayDelta = 1
 language = "fr"
 
 # PROCESSUS
@@ -68,8 +68,8 @@ os.chdir(filepathItems)
 print("Objets interressants:")
 for item in itemMarketable: #Pour chaque item markettable
 	#(TESTING) Juste pour analyser le début des items marketable
-	if item > 1700:
-		break
+	#if item > 1700:
+		#break
 
 	#Je crée le dictionnaire qui va stocker tous les prix de l'item
 	pricePerWorld = {}
