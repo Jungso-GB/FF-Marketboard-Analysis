@@ -95,6 +95,12 @@ for item in itemMarketable: #Pour chaque item markettable
 		continue #On passe à l'item suivant
 
 
+	#Donc si l'article a déjà été vendu, dans un délai de - de X jours,- et que le prix est Okay ALORS
+
+	#Je prends le nom de l'item, et le stocke dans l'itemID.json
+	itemName = itemsID[str(item)]["fr"]
+	priceGoalSuccess["Name"] = itemName
+
 	#Je stocke le prix de notre monde au tout début de l'itemID.json
 	priceGoalSuccess[usWorld] = goalPrice * coefMargin 
 
@@ -114,8 +120,6 @@ for item in itemMarketable: #Pour chaque item markettable
 	print("Vérification de valeur sur les mondes..")
 	for world, price in pricePerWorld.items():
 		if (price <= goalPrice): #Si on a bien le coeff de marg
-			print(str(item))
-			itemName = itemsID[str(item)]["fr"]
 			#Stocker dans un JSON
 			priceGoalSuccess[world] = price
 			
@@ -123,9 +127,8 @@ for item in itemMarketable: #Pour chaque item markettable
 
 #Je crée le fichier itemID.json où je stocke les prix interressants avec leur mondes
 	with open(str(item) +'.json', 'a') as file:
-		file.write(json.dumps(priceGoalSuccess))
-	exit()
- 
+		file.write(json.dumps(priceGoalSuccess, indent=4))
+
  #End of the script
 end = time.time()
 print(end - start)
