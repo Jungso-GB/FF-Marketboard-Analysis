@@ -52,18 +52,17 @@ dayDelta = 6
 
 
 #Si le dossier 'items' existe pas, on le créer. Puis on va dedans.
-filepath = './items/'
-if os.path.exists(filepath) == False:
-	os.makedirs(filepath, mode = 511, exist_ok= False)
+filepathItems = './items/'
+if os.path.exists(filepathItems) == False:
+	os.makedirs(filepathItems, mode = 511, exist_ok= False)
 else:
-	shutil.rmtree(filepath)
-	os.makedirs(filepath, mode = 511, exist_ok= False)
+	shutil.rmtree(filepathItems)
+	os.makedirs(filepathItems, mode = 511, exist_ok= False)
 
-os.chdir(filepath)
+os.chdir(filepathItems)
 
 print("Objets interressants:")
 for item in itemMarketable: #Pour chaque item markettable
-	
 	#(TESTING) Juste pour analyser le début des items marketable
 	if item > 1700:
 		break
