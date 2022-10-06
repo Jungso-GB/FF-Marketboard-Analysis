@@ -15,41 +15,45 @@ start = time.time()
 itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
 
 # WORLDS
-worldsList = [39,71,80,83,85,97,400,401,33,36,42,56,66,67,402,403]
-# CHAOS:
-# 39: Omega
-# 71: Moogle
-# 80: Cerberus
-# 83: Louisoix
-# 85: Spriggan
-# 97: Ragnarok
-# 400: Sagittarius
-# 401: Phantom
-
-# LIGHT:
-# 33: Twintania
-# 36: Lich
-# 42: Zordiak
-# 56: Phoenix
-# 66: Odin
-# 67: Shiva
-# 402: Alpha
-# 403: Raiden
-worldsName = ["Omega", "Moogle", "Cerberus", "Louisoix", "Spriggan", "Ragnarok", "Sagittarius", "Phantom", "Twintania", "Lich", "Zordiak", "Phoenix", "Odin", "Shiva", "Alpha", "Raiden"]
+worldsList = {
+	"39" : "Omega", # CHAOS
+	"71" : "Moogle",# CHAOS
+	"80" : "Cerberus",# CHAOS
+	"83" : "Louisoix",# CHAOS
+	"85" : "Spriggan",# CHAOS
+	"97" : "Ragnarok",# CHAOS
+	"400" : "Sagittarius",# CHAOS
+	"401" : "Phantom",# CHAOS
+	"33" : "Twintania",# LIGHT
+	"36" : "Lich",# LIGHT
+	"42" : "Zordiak",# LIGHT
+	"56" : "Phoenix",# LIGHT
+	"66" : "Odin",# LIGHT
+	"67" : "Shiva",# LIGHT
+	"402" : "Alpha",# LIGHT
+	"403" : "Raiden",# LIGHT
+}
 
 universalisAPI = "https://universalis.app/api/v2/"
 itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
 # INPUT VARIABLES
-usWorld = 97 #(Ragnarok)
+usWorldID = 97 #(Ragnarok)
 coefMargin = 1.2 #(Coeff de marge souhaité)
 minimumSellPrice = 3000
 dayDelta = 6
+language = "fr"
 
 # PROCESSUS
 #Retirer notre monde, des mondes à analyser
 #worldsList.pop(usWorld)
 
+#Conversion du usWorldID en nom
+usWorldName = ""
+for worldID, worldName in worldsList.items():
+	if worldID == str(usWorldID):
+		usWorldName = str(worldName)
+		break
 
 #Si le dossier 'items' existe pas, on le créer. Puis on va dedans.
 filepathItems = './items/'
@@ -72,7 +76,7 @@ for item in itemMarketable: #Pour chaque item markettable
 	priceGoalSuccess = {}
 
 	#Je récupère l'historique d'achat de l'item dans le monde 
-	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorld) + "/" + str(item)).json()
+	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(item)).json()
 	
 	#Je prends le timestamp de la dernière vente
 	try:
@@ -103,16 +107,16 @@ for item in itemMarketable: #Pour chaque item markettable
 	#Donc si l'article a déjà été vendu, dans un délai de - de X jours,- et que le prix est Okay ALORS
 
 	#Je prends le nom de l'item, et le stocke dans l'itemID.json
-	itemName = itemsID[str(item)]["fr"]
+	itemName = itemsID[str(item)][language]
 	#itemName = itemName.encode(encoding='UTF-8',errors='strict')
 	priceGoalSuccess["Name"] = itemName
 
 	#Je stocke le prix de notre monde au tout début de l'itemID.json
-	priceGoalSuccess[usWorld] = goalPrice * coefMargin 
+	priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
 
 	#On va dans chaque monde
-	for world in worldsList:
-		tempItemData = pip._vendor.requests.get(universalisAPI + str(world) + "/" + str(item)).json() #Je récupère l'historique d'achat de l'item dans le monde
+	for worldID, worldName in worldsList.items():
+		tempItemData = pip._vendor.requests.get(universalisAPI + str(worldID) + "/" + str(item)).json() #Je récupère l'historique d'achat de l'item dans le monde
 		try:
 			price = tempItemData['recentHistory'][0]["pricePerUnit"] #Prix de la dernière vente, /! IL FAUT PRENDRE LA VALEUR PLUS BASSE DU LISTING
 		except IndexError: #Si y'a jamais eu de vente, et donc le prix de la dernière vente n'existe pas.
@@ -120,7 +124,7 @@ for item in itemMarketable: #Pour chaque item markettable
 			continue
 
 		#Je la stocke dans un dictionnaire, où chaque prix de chaque monde sera indiqué.
-		pricePerWorld[world] = price
+		pricePerWorld[worldName] = price
 
  #Pour chaque serveur, et donc chaque prix
 	print("Vérification de valeur sur les mondes..")
@@ -132,6 +136,7 @@ for item in itemMarketable: #Pour chaque item markettable
 #Je crée le fichier itemID.json où je stocke les prix interressants avec leur mondes
 	with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
 		file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
+
 #Après que chaque item est été regardé 
  #End of the script
 end = time.time()
