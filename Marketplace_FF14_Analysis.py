@@ -75,10 +75,10 @@ for item in itemMarketable: #Pour chaque item markettable
 	pricePerWorld = {}
 	priceGoalSuccess = {}
 
-	#Je récupère l'historique d'achat de l'item dans le monde 
+	#Je récupère l'historique d'achat de l'item dans notre monde 
 	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(item)).json()
 	
-	#Je prends le timestamp de la dernière vente
+	#Je prends le timestamp de la dernière vente, dans notre monde
 	try:
 		lastSell = serverItemData['recentHistory'][0]["timestamp"]
 	except IndexError:
@@ -118,7 +118,7 @@ for item in itemMarketable: #Pour chaque item markettable
 	for worldID, worldName in worldsList.items():
 		tempItemData = pip._vendor.requests.get(universalisAPI + str(worldID) + "/" + str(item)).json() #Je récupère l'historique d'achat de l'item dans le monde
 		try:
-			price = tempItemData['recentHistory'][0]["pricePerUnit"] #Prix de la dernière vente, /! IL FAUT PRENDRE LA VALEUR PLUS BASSE DU LISTING
+			price = tempItemData['listings'][0]["pricePerUnit"] #Prix de la dernière vente,
 		except IndexError: #Si y'a jamais eu de vente, et donc le prix de la dernière vente n'existe pas.
 			price = 'null'
 			continue
