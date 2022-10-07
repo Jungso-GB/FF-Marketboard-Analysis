@@ -80,7 +80,7 @@ for worldID, worldName in worldsList.items():
 		break
 
 #If the folder 'items' doesn't exist, we create it, and go in
-def itemFolderVerification():
+def itemsFolderVerification():
 	filepathItems = './items/'
 	if os.path.exists(filepathItems) == False:
 		os.makedirs(filepathItems, mode = 511, exist_ok= False)
@@ -88,6 +88,20 @@ def itemFolderVerification():
 		shutil.rmtree(filepathItems)
 		os.makedirs(filepathItems, mode = 511, exist_ok= False)
 	os.chdir(filepathItems)
+
+def getServerItemData(itemToData):
+	
+	dataItem = []
+	try:
+		dataItem = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(itemToData)).json() #proxies={"http": proxy, "https": proxy}
+	#Different Except possible
+	except pip._vendor.requests.exceptions.Timeout:
+		print("Timeout - itemID:" + str(itemToData) + " World: " + str(usWorldName))
+	except pip._vendor.requests.exceptions.TooManyRedirects:
+		print("TooManyRedirects - itemID:" + str(itemToData) + " World: " + str(usWorldName))
+	except pip._vendor.requests.exceptions.RequestException as e:
+		print("RequestException ERROR - itemID:" + str(itemToData) + " World: " + str(usWorldName))
+	return dataItem
 
 
 #Function To Analyze items, with WorldList
@@ -104,21 +118,8 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 
 		#Take a new proxy for each world, to speed up the scan
 		proxy = next(proxy_pool)
-		serverItemData = []
 		#Take history of the item in each world
-		try:
-			serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(item)).json() #proxies={"http": proxy, "https": proxy}
-		#Different Except possible
-		except pip._vendor.requests.exceptions.Timeout:
-			print("Timeout - itemID:" + str(item) + " World: " + str(usWorldName))
-			continue
-		except pip._vendor.requests.exceptions.TooManyRedirects:
-			print("TooManyRedirects - itemID:" + str(item) + " World: " + str(usWorldName))
-			continue
-		except pip._vendor.requests.exceptions.RequestException as e:
-			print("RequestException ERROR - itemID:" + str(item) + " World: " + str(usWorldName))
-			continue
-
+		serverItemData = getServerItemData(item)
 		#Take last timestamp in us world
 		try:
 			lastSell = serverItemData['recentHistory'][0]["timestamp"]
@@ -179,20 +180,19 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 			#Je la stocke dans un dictionnaire, où chaque prix de chaque monde sera indiqué.
 			pricePerWorld[worldName] = price
 
-	#Pour chaque serveur, et donc chaque prix
-		print("Vérification de valeur sur les mondes..")
+	#Once price of each world in pricePerWorld[X], we verify if we have the margin
 		for world, price in pricePerWorld.items():
-			if (price <= goalPrice): #Si on a bien le coeff de marg
-				#Stocker dans un JSON
+			if (price <= goalPrice):
+				#Put in a JSON
 				priceGoalSuccess[world] = price
 				
-	#Je crée le fichier itemID.json où je stocke les prix interressants avec leur mondes
+	#Create the itemID.json where put the name, usWorld's price and the multiple world where the name and price associated
 		with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
 			file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
 
 #MAIN SCRIPT
 def main():
-	itemFolderVerification()
+	itemsFolderVerification()
 	analyzeItems(itemMarketable, worldsList)
 main()
 
