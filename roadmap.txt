@@ -1,3 +1,4 @@
 Before Web Interface:
 - Sort search by categories
 - Stock all itemID.json in one .csv
+- Define functions, not have only one big function
