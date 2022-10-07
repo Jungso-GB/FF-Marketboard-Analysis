@@ -8,6 +8,7 @@ import shutil
 import csv
 import sys
 import pip._vendor.requests #Faire des requetes HTTP
+import pandas as pd
 from datetime import datetime, timedelta
 
 #Import for Proxies Cycle; 
@@ -25,6 +26,7 @@ coefMargin = 1.3 #(Coeff de marge souhaité)
 minimumSellPrice = 6000
 dayDelta = 1
 language = "fr"
+categoryWanted = "furniture"
 
 
 #Get proxy list to speed up the scan. (8 requests simulatenous / IP)
@@ -70,7 +72,7 @@ worldsList = {
 
 #API
 universalisAPI = "https://universalis.app/api/v2/"
-itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
+allItemsMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
 #Convert usWorldID to usWorldName
 usWorldName = ""
@@ -190,10 +192,28 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
 			file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
 
+def getItemMarketable(category):
+	itemsCategory = {}
+	#Convert CSV with all item of the category in JSON
+	url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/FurnitureCatalogItemList.csv'
+	fields = ["1"]
+	itemsCategory = pd.read_csv(url, header=None, names=fields, on_bad_lines='skip')
+
+	#Compare JSON's file with allItemsMarketable and itemsCategory
+	with open(itemsCategory) as csvFile:
+		csvReader = csv.DictReader(csvFile)
+		for rows in csvReader:
+			id = rows['id']
+			print(str(id))
+			itemsCategory[id] = rows
+			print(itemsCategory)
+	#return itemMarketable
+
 #MAIN SCRIPT
 def main():
 	itemsFolderVerification()
-	analyzeItems(itemMarketable, worldsList)
+	itemsMarketableToAnalyze = getItemMarketable(categoryWanted)
+	analyzeItems(itemsMarketableToAnalyze, worldsList)
 main()
 
 #Après que chaque item est été regardé 
