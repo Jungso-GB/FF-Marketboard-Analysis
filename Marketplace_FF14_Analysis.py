@@ -1,4 +1,5 @@
 # IMPORTS
+import importlib
 import json
 import time
 import calendar
@@ -8,6 +9,30 @@ import csv
 import sys
 import pip._vendor.requests #Faire des requetes HTTP
 from datetime import datetime, timedelta
+
+#Import for Proxies Cycle; 
+#pip3 install lxml
+from lxml.html import fromstring
+from itertools import cycle
+import traceback
+
+
+#Avoir une liste de proxy pour éviter le Ban IP (et pouvoir changer proxy/ip pour scrap + vite; dû limite 8r/IP)
+def get_proxies():
+	urlProxies = 'https://free-proxy-list.net/'
+	response = pip._vendor.requests.get(urlProxies)
+	parser = fromstring(response.text)
+	proxies = set()
+	for i in parser.xpath('//tbody/tr')[:10]:
+		if i.xpath('.//td[7][contains(text(),"yes")]'):
+		#Grabbing IP and corresponding PORT
+			proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
+	proxies.add(proxy)
+	return proxies
+
+proxies = get_proxies()
+print(proxies)
+
 #COUNTER
 start = time.time()
 
@@ -39,7 +64,7 @@ itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
 # INPUT VARIABLES
 usWorldID = 97 #(Ragnarok)
-coefMargin = 1.8 #(Coeff de marge souhaité)
+coefMargin = 2.3 #(Coeff de marge souhaité)
 minimumSellPrice = 6000
 dayDelta = 1
 language = "fr"
@@ -48,7 +73,7 @@ language = "fr"
 #Retirer notre monde, des mondes à analyser
 #worldsList.pop(usWorld)
 
-#Conversion du usWorldID en nom
+#Conversion du usWorldID en usWorldName
 usWorldName = ""
 for worldID, worldName in worldsList.items():
 	if worldID == str(usWorldID):
