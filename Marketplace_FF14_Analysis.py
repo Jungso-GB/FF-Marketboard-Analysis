@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 
 #Import for Proxies Cycle; 
 #pip3 install lxml
-from lxml.html import fromstring
+from lxml.html import fromstring #A FINIR
 from itertools import cycle
 import traceback
 
@@ -21,16 +21,17 @@ import traceback
 def get_proxies():
 	urlProxies = 'https://free-proxy-list.net/'
 	response = pip._vendor.requests.get(urlProxies)
-	parser = fromstring(response.text)
+	parser = fromstring(response.text) #Script HTML de la page complet
 	proxies = set()
-	for i in parser.xpath('//tbody/tr')[:10]:
-		if i.xpath('.//td[7][contains(text(),"yes")]'):
+	for i in parser.xpath('//tbody/tr')[:20]:
+		if i.xpath('.//td[7][contains(text(),"yes")]'): #If HTTPS is "yes"
 		#Grabbing IP and corresponding PORT
 			proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
-	proxies.add(proxy)
+			proxies.add(proxy)
 	return proxies
 
 proxies = get_proxies()
+proxy_pool = cycle(proxies)
 print(proxies)
 
 #COUNTER
@@ -64,7 +65,7 @@ itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
 # INPUT VARIABLES
 usWorldID = 97 #(Ragnarok)
-coefMargin = 2.3 #(Coeff de marge souhaité)
+coefMargin = 1.3 #(Coeff de marge souhaité)
 minimumSellPrice = 6000
 dayDelta = 1
 language = "fr"
@@ -93,16 +94,30 @@ os.chdir(filepathItems)
 print("Objets interressants:")
 for item in itemMarketable: #Pour chaque item markettable
 	#(TESTING) Juste pour analyser le début des items marketable
-	#if item > 1700:
-		#break
+	if item > 3000:
+		break
 
 	#Je crée le dictionnaire qui va stocker tous les prix de l'item
 	pricePerWorld = {}
 	priceGoalSuccess = {}
 
-	#Je récupère l'historique d'achat de l'item dans notre monde 
-	serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(item)).json()
-	
+ 	#Prendre un nouveau item à chaque test, pour augmenter la rapidité
+	proxy = next(proxy_pool)
+	serverItemData = []
+	#Je récupère l'historique d'achat de l'item dans notre monde
+	try:
+		serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(item)).json() #proxies={"http": proxy, "https": proxy}
+	#Les différents Except généraux possible
+	except pip._vendor.requests.exceptions.Timeout:
+		print("Timeout - itemID:" + str(item) + " World: " + str(usWorldName))
+		continue
+	except pip._vendor.requests.exceptions.TooManyRedirects:
+		print("TooManyRedirects - itemID:" + str(item) + " World: " + str(usWorldName))
+		continue
+	except pip._vendor.requests.exceptions.RequestException as e:
+		print("RequestException ERROR - itemID:" + str(item) + " World: " + str(usWorldName))
+		continue
+
 	#Je prends le timestamp de la dernière vente, dans notre monde
 	try:
 		lastSell = serverItemData['recentHistory'][0]["timestamp"]
@@ -140,8 +155,24 @@ for item in itemMarketable: #Pour chaque item markettable
 	priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
 
 	#On va dans chaque monde
+	print("Vérification dans chaque monde...")
 	for worldID, worldName in worldsList.items():
-		tempItemData = pip._vendor.requests.get(universalisAPI + str(worldID) + "/" + str(item)).json() #Je récupère l'historique d'achat de l'item dans le monde
+		proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
+		tempItemData = []
+
+		#On essaye d'avoir les données entière de l'item dans le monde, via un PROXY
+		try:
+			tempItemData = pip._vendor.requests.get(universalisAPI + str(worldID) + "/" + str(item)).json()#proxies={"http": proxy, "https": proxy}
+		#On y gère tous les Excepts générales
+		except pip._vendor.requests.exceptions.Timeout:
+			print("Timeout - itemID:" + itemName + " World: " + worldName)
+			continue
+		except pip._vendor.requests.exceptions.TooManyRedirects:
+			print("TooManyRedirects - itemID:" + itemName + " World: " + worldName)
+			continue
+		except pip._vendor.requests.exceptions.RequestException as e:
+			print("RequestException ERROR - itemID:" + itemName + " World: " + worldName)
+			continue
 		try:
 			price = tempItemData['listings'][0]["pricePerUnit"] #Prix de la dernière vente,
 		except IndexError: #Si y'a jamais eu de vente, et donc le prix de la dernière vente n'existe pas.
