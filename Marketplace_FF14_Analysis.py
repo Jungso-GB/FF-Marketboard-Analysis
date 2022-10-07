@@ -16,8 +16,18 @@ from lxml.html import fromstring #A FINIR
 from itertools import cycle
 import traceback
 
+#Counter Scan Research
+start = time.time()
 
-#Avoir une liste de proxy pour éviter le Ban IP (et pouvoir changer proxy/ip pour scrap + vite; dû limite 8r/IP)
+# The modify variables
+usWorldID = 97 #(Ragnarok)
+coefMargin = 1.3 #(Coeff de marge souhaité)
+minimumSellPrice = 6000
+dayDelta = 1
+language = "fr"
+
+
+#Get proxy list to speed up the scan. (8 requests simulatenous / IP)
 def get_proxies():
 	urlProxies = 'https://free-proxy-list.net/'
 	response = pip._vendor.requests.get(urlProxies)
@@ -30,17 +40,15 @@ def get_proxies():
 			proxies.add(proxy)
 	return proxies
 
+#Initialisation Proxy
 proxies = get_proxies()
 proxy_pool = cycle(proxies)
-print(proxies)
-
-#COUNTER
-start = time.time()
 
 # JSON Item ID with name on different languages, par TeamCraft
 itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
 
 # WORLDS
+# EU
 worldsList = {
 	"39" : "Omega", # CHAOS
 	"71" : "Moogle",# CHAOS
@@ -60,138 +68,133 @@ worldsList = {
 	"403" : "Raiden",# LIGHT
 }
 
+#API
 universalisAPI = "https://universalis.app/api/v2/"
 itemMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
 
-# INPUT VARIABLES
-usWorldID = 97 #(Ragnarok)
-coefMargin = 1.3 #(Coeff de marge souhaité)
-minimumSellPrice = 6000
-dayDelta = 1
-language = "fr"
-
-# PROCESSUS
-#Retirer notre monde, des mondes à analyser
-#worldsList.pop(usWorld)
-
-#Conversion du usWorldID en usWorldName
+#Convert usWorldID to usWorldName
 usWorldName = ""
 for worldID, worldName in worldsList.items():
 	if worldID == str(usWorldID):
 		usWorldName = str(worldName)
 		break
 
-#Si le dossier 'items' existe pas, on le créer. Puis on va dedans.
-filepathItems = './items/'
-if os.path.exists(filepathItems) == False:
-	os.makedirs(filepathItems, mode = 511, exist_ok= False)
-else:
-	shutil.rmtree(filepathItems)
-	os.makedirs(filepathItems, mode = 511, exist_ok= False)
-
-os.chdir(filepathItems)
-
-print("Objets interressants:")
-for item in itemMarketable: #Pour chaque item markettable
-	#(TESTING) Juste pour analyser le début des items marketable
-	if item > 3000:
-		break
-
-	#Je crée le dictionnaire qui va stocker tous les prix de l'item
-	pricePerWorld = {}
-	priceGoalSuccess = {}
-
- 	#Prendre un nouveau item à chaque test, pour augmenter la rapidité
-	proxy = next(proxy_pool)
-	serverItemData = []
-	#Je récupère l'historique d'achat de l'item dans notre monde
-	try:
-		serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(item)).json() #proxies={"http": proxy, "https": proxy}
-	#Les différents Except généraux possible
-	except pip._vendor.requests.exceptions.Timeout:
-		print("Timeout - itemID:" + str(item) + " World: " + str(usWorldName))
-		continue
-	except pip._vendor.requests.exceptions.TooManyRedirects:
-		print("TooManyRedirects - itemID:" + str(item) + " World: " + str(usWorldName))
-		continue
-	except pip._vendor.requests.exceptions.RequestException as e:
-		print("RequestException ERROR - itemID:" + str(item) + " World: " + str(usWorldName))
-		continue
-
-	#Je prends le timestamp de la dernière vente, dans notre monde
-	try:
-		lastSell = serverItemData['recentHistory'][0]["timestamp"]
-	except IndexError:
-		lastSell = 'null' #Si l'article na jamais été vendu
-		continue #Passe à l'item suivant
-	
-	#print(datetime.fromtimestamp(lastSell)) -> Derniere vente
-	#Si lastSell (converti à partir du timestamp) est plus vieux que maintenant - le delta en heure renseigné
-	if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
-		#Décalage temps + de X jours
-		continue #Item suivant
-
-	#Conversion du timestamp
-	lastSell = datetime.fromtimestamp(lastSell) #FORMAT 2022-10-05 05:25:18
-	
-	#Je récupère le prix du serveur souhaité
-	try:
-		goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Je détermine mon prix objectif
-	except IndexError: #Si l'item n'a jamais eu de prix défini
-		goalPrice = 'null'
-		continue #On passe à l'item suivant
-	if goalPrice * coefMargin <= minimumSellPrice: #Si le prix de vente n'est pas au minimum celui souhaité
-		continue #On passe à l'item suivant
+#If the folder 'items' doesn't exist, we create it, and go in
+def itemFolderVerification():
+	filepathItems = './items/'
+	if os.path.exists(filepathItems) == False:
+		os.makedirs(filepathItems, mode = 511, exist_ok= False)
+	else:
+		shutil.rmtree(filepathItems)
+		os.makedirs(filepathItems, mode = 511, exist_ok= False)
+	os.chdir(filepathItems)
 
 
-	#Donc si l'article a déjà été vendu, dans un délai de - de X jours,- et que le prix est Okay ALORS
+#Function To Analyze items, with WorldList
+def analyzeItems(itemsToAnalyze, worldsToAnalyze):
+	#For each item
+	for item in itemsToAnalyze:
+		#(TESTING) Juste pour analyser le début des items marketable
+		if item > 3000:
+			break
 
-	#Je prends le nom de l'item, et le stocke dans l'itemID.json
-	itemName = itemsID[str(item)][language]
-	#itemName = itemName.encode(encoding='UTF-8',errors='strict')
-	priceGoalSuccess["Name"] = itemName
+		#Create dictionnary to stock all prices of items
+		pricePerWorld = {}
+		priceGoalSuccess = {}
 
-	#Je stocke le prix de notre monde au tout début de l'itemID.json
-	priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
-
-	#On va dans chaque monde
-	print("Vérification dans chaque monde...")
-	for worldID, worldName in worldsList.items():
-		proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
-		tempItemData = []
-
-		#On essaye d'avoir les données entière de l'item dans le monde, via un PROXY
+		#Take a new proxy for each world, to speed up the scan
+		proxy = next(proxy_pool)
+		serverItemData = []
+		#Take history of the item in each world
 		try:
-			tempItemData = pip._vendor.requests.get(universalisAPI + str(worldID) + "/" + str(item)).json()#proxies={"http": proxy, "https": proxy}
-		#On y gère tous les Excepts générales
+			serverItemData = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(item)).json() #proxies={"http": proxy, "https": proxy}
+		#Different Except possible
 		except pip._vendor.requests.exceptions.Timeout:
-			print("Timeout - itemID:" + itemName + " World: " + worldName)
+			print("Timeout - itemID:" + str(item) + " World: " + str(usWorldName))
 			continue
 		except pip._vendor.requests.exceptions.TooManyRedirects:
-			print("TooManyRedirects - itemID:" + itemName + " World: " + worldName)
+			print("TooManyRedirects - itemID:" + str(item) + " World: " + str(usWorldName))
 			continue
 		except pip._vendor.requests.exceptions.RequestException as e:
-			print("RequestException ERROR - itemID:" + itemName + " World: " + worldName)
+			print("RequestException ERROR - itemID:" + str(item) + " World: " + str(usWorldName))
 			continue
+
+		#Take last timestamp in us world
 		try:
-			price = tempItemData['listings'][0]["pricePerUnit"] #Prix de la dernière vente,
-		except IndexError: #Si y'a jamais eu de vente, et donc le prix de la dernière vente n'existe pas.
-			price = 'null'
-			continue
+			lastSell = serverItemData['recentHistory'][0]["timestamp"]
+		except IndexError:
+			lastSell = 'null' #If item has never been sell
+			continue #Next Item
+		
+		#If the item is sell before X days..
+		if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
+			continue #Next Item
 
-		#Je la stocke dans un dictionnaire, où chaque prix de chaque monde sera indiqué.
-		pricePerWorld[worldName] = price
+		#Convert timestamp
+		lastSell = datetime.fromtimestamp(lastSell) #FORMAT 2022-10-05 05:25:18
+		
+		#Take price of item in world want
+		try:
+			goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Je détermine mon prix objectif
+		except IndexError: #Si l'item n'a jamais eu de prix défini
+			goalPrice = 'null'
+			continue #Next Item
+		if goalPrice * coefMargin <= minimumSellPrice: #Si le prix de vente n'est pas au minimum celui souhaité
+			continue #Next Item
 
- #Pour chaque serveur, et donc chaque prix
-	print("Vérification de valeur sur les mondes..")
-	for world, price in pricePerWorld.items():
-		if (price <= goalPrice): #Si on a bien le coeff de marg
-			#Stocker dans un JSON
-			priceGoalSuccess[world] = price
-			
-#Je crée le fichier itemID.json où je stocke les prix interressants avec leur mondes
-	with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
-		file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
+		#SO, if the item has been already sell, in a delay of - X days and that the price's verification is good, SO...
+
+		#Take name of the item and put it in l'itemID.json
+		itemName = itemsID[str(item)][language]
+		priceGoalSuccess["Name"] = itemName
+
+		#Put price of us world'item in l'itemID.json at first
+		priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
+
+		#On va dans chaque monde
+		print("Vérification dans chaque monde...")
+		for worldID, worldName in worldsToAnalyze.items():
+			proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
+			tempItemData = []
+
+			#On essaye d'avoir les données entière de l'item dans le monde, via un PROXY
+			try:
+				tempItemData = pip._vendor.requests.get(universalisAPI + str(worldID) + "/" + str(item)).json()#proxies={"http": proxy, "https": proxy}
+			#On y gère tous les Excepts générales
+			except pip._vendor.requests.exceptions.Timeout:
+				print("Timeout - itemID:" + itemName + " World: " + worldName)
+				continue
+			except pip._vendor.requests.exceptions.TooManyRedirects:
+				print("TooManyRedirects - itemID:" + itemName + " World: " + worldName)
+				continue
+			except pip._vendor.requests.exceptions.RequestException as e:
+				print("RequestException ERROR - itemID:" + itemName + " World: " + worldName)
+				continue
+			try:
+				price = tempItemData['listings'][0]["pricePerUnit"] #Prix de la dernière vente,
+			except IndexError: #Si y'a jamais eu de vente, et donc le prix de la dernière vente n'existe pas.
+				price = 'null'
+				continue
+
+			#Je la stocke dans un dictionnaire, où chaque prix de chaque monde sera indiqué.
+			pricePerWorld[worldName] = price
+
+	#Pour chaque serveur, et donc chaque prix
+		print("Vérification de valeur sur les mondes..")
+		for world, price in pricePerWorld.items():
+			if (price <= goalPrice): #Si on a bien le coeff de marg
+				#Stocker dans un JSON
+				priceGoalSuccess[world] = price
+				
+	#Je crée le fichier itemID.json où je stocke les prix interressants avec leur mondes
+		with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
+			file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
+
+#MAIN SCRIPT
+def main():
+	itemFolderVerification()
+	analyzeItems(itemMarketable, worldsList)
+main()
 
 #Après que chaque item est été regardé 
  #End of the script
