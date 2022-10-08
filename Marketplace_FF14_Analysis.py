@@ -1,4 +1,5 @@
 # IMPORTS
+from asyncore import write
 import importlib
 import json
 import time
@@ -193,20 +194,27 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 			file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
 
 def getItemMarketable(category):
-	itemsCategory = {}
-	#Convert CSV with all item of the category in JSON
-	url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/FurnitureCatalogItemList.csv'
-	fields = ["1"]
-	itemsCategory = pd.read_csv(url, header=None, names=fields, on_bad_lines='skip')
+	#Reading CSV's category file with itemID, only for the columns with ID
+	url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/FurnitureCatalogItemList.csv?raw=true'
+	columns = ["1"]
+	itemsCategory = pd.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
+	
+	with open("categoryData" +'.json', 'a', encoding='UTF-8') as file:
+		file.write(json.dumps(itemsCategory, indent=4))
 
+	try:
+		freud = itemsCategory['1'][0]
+	except:
+		print ("Erreur valeur")
+	print(freud)
 	#Compare JSON's file with allItemsMarketable and itemsCategory
-	with open(itemsCategory) as csvFile:
-		csvReader = csv.DictReader(csvFile)
-		for rows in csvReader:
-			id = rows['id']
-			print(str(id))
-			itemsCategory[id] = rows
-			print(itemsCategory)
+	#with open(itemsCategory) as csvFile:
+		#csvReader = csv.DictReader(csvFile)
+		#for rows in csvReader:
+			#id = rows['id']
+			#print(str(id))
+			#itemsCategory[id] = rows
+			#print(itemsCategory)
 	#return itemMarketable
 
 #MAIN SCRIPT
