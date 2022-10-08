@@ -23,11 +23,11 @@ start = time.time()
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
-coefMargin = 1.3 #(Coeff de marge souhaité)
+coefMargin = 2.5 #(Coeff de marge souhaité)
 minimumSellPrice = 6000
 dayDelta = 1
 language = "fr"
-categoryWanted = "furniture"
+categoryWanted = "furniture" #Not working yet
 
 
 #Get proxy list to speed up the scan. (8 requests simulatenous / IP)
@@ -111,9 +111,6 @@ def getServerItemData(itemToData):
 def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	#For each item
 	for item in itemsToAnalyze:
-		#(TESTING) Juste pour analyser le début des items marketable
-		if item > 3000:
-			break
 
 		#Create dictionnary to stock all prices of items
 		pricePerWorld = {}
@@ -156,7 +153,6 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
 
 		#On va dans chaque monde
-		print("Vérification dans chaque monde...")
 		for worldID, worldName in worldsToAnalyze.items():
 			proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
 			tempItemData = []
@@ -199,23 +195,32 @@ def getItemMarketable(category):
 	columns = ["1"]
 	itemsCategory = pd.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
 	
+	#Create JSON file only with different item for the category ; USELESS FOR SCRIPT, ONLY TO UNDERSTAND THE SCRIPT
 	with open("categoryData" +'.json', 'a', encoding='UTF-8') as file:
 		file.write(json.dumps(itemsCategory, indent=4))
+	with open("allItemsMarketable" +'.json', 'a', encoding='UTF-8') as file:
+		file.write(json.dumps(allItemsMarketable, indent=4))
 
-	try:
-		freud = itemsCategory['1'][0]
-	except:
-		print ("Erreur valeur")
-	print(freud)
-	#Compare JSON's file with allItemsMarketable and itemsCategory
-	#with open(itemsCategory) as csvFile:
-		#csvReader = csv.DictReader(csvFile)
-		#for rows in csvReader:
-			#id = rows['id']
-			#print(str(id))
-			#itemsCategory[id] = rows
-			#print(itemsCategory)
-	#return itemMarketable
+	#Create list of itemID in category
+	itemsOfTheCategory = []
+	
+	#Counter of iteration
+	iteration = 0
+	while 1:
+		iteration = iteration + 1
+		#Try to have ID
+		try:
+			currentScanItemID = itemsCategory['1'][iteration]
+   
+			#If itemScan is and real ID and is in the list of all item marketable
+			if (currentScanItemID != "Item" or "") and (int(currentScanItemID) in allItemsMarketable):
+				itemsOfTheCategory.append(currentScanItemID)
+				print("item added")
+		except:
+			print ("End of the scan, iteration: " + str(iteration))
+			break
+	return itemsOfTheCategory
+
 
 #MAIN SCRIPT
 def main():
