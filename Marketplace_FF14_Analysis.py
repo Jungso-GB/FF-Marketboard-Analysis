@@ -23,11 +23,12 @@ start = time.time()
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
-coefMargin = 2.5 #(Coeff de marge souhaité)
-minimumSellPrice = 6000
+coefMargin = 9 #(Coeff de marge souhaité)
+minimumSellPrice = 20000
 dayDelta = 1
 language = "fr"
 categoryWanted = "furniture" #Not working yet
+verifySalePotential = True
 
 
 #Get proxy list to speed up the scan. (8 requests simulatenous / IP)
@@ -128,8 +129,17 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 			continue #Next Item
 		
 		#If the item is sell before X days..
-		if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
-			continue #Next Item
+		if verifySalePotential is True:
+			try:
+				serverItemData['recentHistory'][1]["timestamp"]
+			except IndexError:
+				lastSecondSell = 'null' #The item has not been selling 2 times
+				continue #Next Item
+			if (datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta))) and (datetime.fromtimestamp(verifySalePotential) < (datetime.now() - timedelta(days=dayDelta * 1.5))): #Verify if the item has been selling one time in period and second time in period * 1,5
+				continue #Next Item
+		else:
+			if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
+				continue #Next Item
 
 		#Convert timestamp
 		lastSell = datetime.fromtimestamp(lastSell) #FORMAT 2022-10-05 05:25:18
@@ -215,9 +225,8 @@ def getItemMarketable(category):
 			#If itemScan is and real ID and is in the list of all item marketable
 			if (currentScanItemID != "Item" or "") and (int(currentScanItemID) in allItemsMarketable):
 				itemsOfTheCategory.append(currentScanItemID)
-				print("item added")
 		except:
-			print ("End of the scan, iteration: " + str(iteration))
+			print ("End of the category's scan, iteration: " + str(iteration) + " items marketable in the category")
 			break
 	return itemsOfTheCategory
 
