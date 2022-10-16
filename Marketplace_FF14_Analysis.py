@@ -2,6 +2,7 @@
 from asyncore import write
 import importlib
 import json
+from optparse import Values
 import time
 import calendar
 import os
@@ -23,8 +24,8 @@ start = time.time()
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
-coefMargin = 9 #(Coeff de marge souhaité)
-minimumSellPrice = 20000
+coefMargin = 2 #(Coeff de marge souhaité)
+minimumSellPrice = 2000
 dayDelta = 1
 language = "fr"
 categoryWanted = "furniture" #Not working yet
@@ -188,12 +189,18 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 
 			#Je la stocke dans un dictionnaire, où chaque prix de chaque monde sera indiqué.
 			pricePerWorld[worldName] = price
-
+		
 	#Once price of each world in pricePerWorld[X], we verify if we have the margin
 		for world, price in pricePerWorld.items():
 			if (price <= goalPrice):
 				#Put in a JSON
 				priceGoalSuccess[world] = price
+		
+  		#If no world have interresting price 
+		print(str(priceGoalSuccess))	
+		if len(priceGoalSuccess.keys()) <= 2:
+			print("tempItemData vide")
+			continue #Next item
 				
 	#Create the itemID.json where put the name, usWorld's price and the multiple world where the name and price associated
 		with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
