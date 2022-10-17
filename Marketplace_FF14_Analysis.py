@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 #Import for Proxies Cycle; 
 #pip3 install lxml
-from lxml.html import fromstring #A FINIR
+from lxml import fromstring #A FINIR
 from itertools import cycle
 import traceback
 
