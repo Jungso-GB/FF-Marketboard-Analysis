@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 #Import for Proxies Cycle; 
 #pip3 install lxml
-from lxml import fromstring #A FINIR
+from lxml.html import fromstring
 from itertools import cycle
 import traceback
 
@@ -24,8 +24,8 @@ start = time.time()
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
-coefMargin = 2 #(Coeff de marge souhaité)
-minimumSellPrice = 2000
+coefMargin = 9 #(Coeff de marge souhaité)
+minimumSellPrice = 20000
 dayDelta = 1
 language = "fr"
 categoryWanted = "furniture" #Not working yet
@@ -119,7 +119,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		priceGoalSuccess = {}
 
 		#Take a new proxy for each world, to speed up the scan
-		proxy = next(proxy_pool)
+		#proxy = next(proxy_pool)
 		#Take history of the item in each world
 		serverItemData = getServerItemData(item)
 		#Take last timestamp in us world
@@ -165,7 +165,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 
 		#On va dans chaque monde
 		for worldID, worldName in worldsToAnalyze.items():
-			proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
+			#proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
 			tempItemData = []
 
 			#On essaye d'avoir les données entière de l'item dans le monde, via un PROXY
@@ -197,9 +197,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 				priceGoalSuccess[world] = price
 		
   		#If no world have interresting price 
-		print(str(priceGoalSuccess))	
 		if len(priceGoalSuccess.keys()) <= 2:
-			print("tempItemData vide")
 			continue #Next item
 				
 	#Create the itemID.json where put the name, usWorld's price and the multiple world where the name and price associated
@@ -248,4 +246,4 @@ main()
 #Après que chaque item est été regardé 
  #End of the script
 end = time.time()
-print("Durée du scan: " + str(round(end - start)) + "s")
+print("Durée du scan: " + str(round(end - start) / 60) + "m")
