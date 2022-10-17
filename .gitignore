@@ -5,6 +5,7 @@
 
 #UsIgnore File/Folders
 /items/*
+/.vscode./*
 
 # User-specific files
 *.rsuser
