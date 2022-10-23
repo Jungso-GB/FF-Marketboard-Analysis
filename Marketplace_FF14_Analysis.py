@@ -31,27 +31,6 @@ language = "fr"
 categoryWanted = "furniture" #Not working yet
 verifySalePotential = True
 
-
-#Get proxy list to speed up the scan. (8 requests simulatenous / IP)
-def get_proxies():
-	urlProxies = 'https://free-proxy-list.net/'
-	response = pip._vendor.requests.get(urlProxies)
-	parser = fromstring(response.text) #Script HTML de la page complet
-	proxies = set()
-	for i in parser.xpath('//tbody/tr')[:20]:
-		if i.xpath('.//td[7][contains(text(),"yes")]'): #If HTTPS is "yes"
-		#Grabbing IP and corresponding PORT
-			proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
-			proxies.add(proxy)
-	return proxies
-
-#Initialisation Proxy
-proxies = get_proxies()
-proxy_pool = cycle(proxies)
-
-# JSON Item ID with name on different languages, par TeamCraft
-itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
-
 # WORLDS
 # EU
 worldsList = {
@@ -72,6 +51,26 @@ worldsList = {
 	"402" : "Alpha",# LIGHT
 	"403" : "Raiden",# LIGHT
 }
+
+#Get proxy list to speed up the scan. (8 requests simulatenous / IP)
+def get_proxies():
+	urlProxies = 'https://free-proxy-list.net/'
+	response = pip._vendor.requests.get(urlProxies)
+	parser = fromstring(response.text) #Script HTML de la page complet
+	proxies = set()
+	for i in parser.xpath('//tbody/tr')[:20]:
+		if i.xpath('.//td[7][contains(text(),"yes")]'): #If HTTPS is "yes"
+		#Grabbing IP and corresponding PORT
+			proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
+			proxies.add(proxy)
+	return proxies
+
+#Initialisation Proxy
+proxies = get_proxies()
+proxy_pool = cycle(proxies)
+
+# JSON Item ID with name on different languages, par TeamCraft
+itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
 
 #API
 universalisAPI = "https://universalis.app/api/v2/"
@@ -132,11 +131,12 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		#If the item is sell before X days..
 		if verifySalePotential is True:
 			try:
-				serverItemData['recentHistory'][1]["timestamp"]
+				lastSecondSellTime = serverItemData['recentHistory'][1]["timestamp"]
 			except IndexError:
-				lastSecondSell = 'null' #The item has not been selling 2 times
-				continue #Next Item
-			if (datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta))) and (datetime.fromtimestamp(verifySalePotential) < (datetime.now() - timedelta(days=dayDelta * 1.5))): #Verify if the item has been selling one time in period and second time in period * 1,5
+				lastSecondSellTime = 'null' #The item has not been selling 2 times
+				continue #Next ITem
+
+			if (datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta))) and (datetime.fromtimestamp(lastSecondSellTime) < (datetime.now() - timedelta(days=dayDelta * 1.5))): #Verify if the item has been selling one time in period and second time in period * 1,5
 				continue #Next Item
 		else:
 			if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
@@ -145,7 +145,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		#Convert timestamp
 		lastSell = datetime.fromtimestamp(lastSell) #FORMAT 2022-10-05 05:25:18
 		
-		#Take price of item in world want
+		#Verify pricing in world we want
 		try:
 			goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Je détermine mon prix objectif
 		except IndexError: #Si l'item n'a jamais eu de prix défini
@@ -153,6 +153,17 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 			continue #Next Item
 		if goalPrice * coefMargin <= minimumSellPrice: #Si le prix de vente n'est pas au minimum celui souhaité
 			continue #Next Item
+
+		#Verify the second item price
+		if verifySalePotential is True:
+			try:
+				lastSecondSellPrice = serverItemData['recentHistory'][1]["pricePerUnit"]
+			except IndexError:
+				lastSecondSellPrice = 'null' #The item has not been selling 2 times
+				continue #Next Item
+			if ((lastSecondSellPrice * 1.2) < (goalPrice * coefMargin)):
+				continue #Next Item
+				
 
 		#SO, if the item has been already sell, in a delay of - X days and that the price's verification is good, SO...
 
@@ -231,7 +242,7 @@ def getItemMarketable(category):
 			if (currentScanItemID != "Item" or "") and (int(currentScanItemID) in allItemsMarketable):
 				itemsOfTheCategory.append(currentScanItemID)
 		except:
-			print ("End of the category's scan, iteration: " + str(iteration) + " items marketable in the category")
+			print ("End of the category's scan, " + str(iteration) + " items marketable in the category")
 			break
 	return itemsOfTheCategory
 
