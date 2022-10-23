@@ -28,7 +28,7 @@ coefMargin = 9 #(Coeff de marge souhaité)
 minimumSellPrice = 20000
 dayDelta = 1
 language = "fr"
-categoryWanted = "furniture" #Not working yet
+categoryWanted = "collectables" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
@@ -217,15 +217,23 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 
 def getItemMarketable(category):
 	#Reading CSV's category file with itemID, only for the columns with ID
-	url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/FurnitureCatalogItemList.csv?raw=true'
-	columns = ["1"]
+	if category == "furniture":
+		print("Category furniture selected")
+		url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/FurnitureCatalogItemList.csv?raw=true'
+		columns = ["1"]
+		indexScan = '1'
+	elif category == "collectables":
+		print("Category Collectable Items Shop selected")
+		url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/CollectablesShopItem.csv?raw=true'
+		columns = ["0"]
+		indexScan = '0'
 	itemsCategory = pd.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
-	
 	#Create JSON file only with different item for the category ; USELESS FOR SCRIPT, ONLY TO UNDERSTAND THE SCRIPT
 	with open("categoryData" +'.json', 'a', encoding='UTF-8') as file:
 		file.write(json.dumps(itemsCategory, indent=4))
 	with open("allItemsMarketable" +'.json', 'a', encoding='UTF-8') as file:
 		file.write(json.dumps(allItemsMarketable, indent=4))
+  
 
 	#Create list of itemID in category
 	itemsOfTheCategory = []
@@ -236,10 +244,10 @@ def getItemMarketable(category):
 		iteration = iteration + 1
 		#Try to have ID
 		try:
-			currentScanItemID = itemsCategory['1'][iteration]
+			currentScanItemID = itemsCategory[indexScan][iteration]
    
 			#If itemScan is and real ID and is in the list of all item marketable
-			if (currentScanItemID != "Item" or "") and (int(currentScanItemID) in allItemsMarketable):
+			if (currentScanItemID != "Item" or "" or 0) and (int(currentScanItemID) in allItemsMarketable):
 				itemsOfTheCategory.append(currentScanItemID)
 		except:
 			print ("End of the category's scan, " + str(iteration) + " items marketable in the category")
@@ -257,4 +265,4 @@ main()
 #Après que chaque item est été regardé 
  #End of the script
 end = time.time()
-print("Durée du scan: " + str(round(end - start) / 60) + "m")
+print("Durée du scan: " + str(int(round(end - start) / 60)) + "m")
