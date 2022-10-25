@@ -12,6 +12,7 @@ import sys
 import pip._vendor.requests #Faire des requetes HTTP
 import pandas as pd
 from datetime import datetime, timedelta
+import random
 
 #Import for Proxies Cycle; 
 #pip3 install lxml
@@ -21,6 +22,9 @@ import traceback
 
 #Counter Scan Research
 start = time.time()
+
+#To know how much item to analyze in analyzeItems() from getItemMarketable() 
+iteration = 0
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
@@ -110,8 +114,12 @@ def getServerItemData(itemToData):
 
 #Function To Analyze items, with WorldList
 def analyzeItems(itemsToAnalyze, worldsToAnalyze):
+	print("Starting of the analyze...")
+
 	#For each item
 	for item in itemsToAnalyze:
+		if random.random() < 25:
+			print("Item " + item + " / " + iteration)
 
 		#Create dictionnary to stock all prices of items
 		pricePerWorld = {}
@@ -237,9 +245,10 @@ def getItemMarketable(category):
 
 	#Create list of itemID in category
 	itemsOfTheCategory = []
-	
-	#Counter of iteration
+
+	global iteration
 	iteration = 0
+	#Counter of iteration
 	while 1:
 		iteration = iteration + 1
 		#Try to have ID
