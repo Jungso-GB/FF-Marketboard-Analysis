@@ -250,6 +250,7 @@ def getItemMarketable(category):
 	itemsOfTheCategory = []
 
 	iteration = 0
+	globalItems = 0
 	#Counter of iteration
 	while 1:
 		iteration = iteration + 1
@@ -260,12 +261,13 @@ def getItemMarketable(category):
 			#If itemScan is and real ID and is in the list of all item marketable
 			if (currentScanItemID != "Item" or "" or 0) and (int(currentScanItemID) in allItemsMarketable):
 				itemsOfTheCategory.append(currentScanItemID)
+				globalItems = globalItems + 1
 		except:
 			print ("End of the category's scan, " + str(iteration) + " items marketable in the category")
 			break
 
 	global nbOfItems
-	nbOfItems = iteration
+	nbOfItems = globalItems
 	return itemsOfTheCategory
 
 
