@@ -120,8 +120,9 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	#For each item
 	for item in itemsToAnalyze:
 		iteration += 1
-		if random.random() < 0.10:
-			print("Item " + str(iteration) + " / " + str(nbOfItems))
+		if random.random() < 0.02:
+			percent = iteration / nbOfItems * 100
+			print("Progress.. " + str(int(percent)) + "%")
 
 		#Create dictionnary to stock all prices of items
 		pricePerWorld = {}
