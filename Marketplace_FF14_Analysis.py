@@ -115,11 +115,13 @@ def getServerItemData(itemToData):
 #Function To Analyze items, with WorldList
 def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	print("Starting of the analyze...")
+	iteration = 0
 
 	#For each item
 	for item in itemsToAnalyze:
-		if random.random() < 25:
-			print("Item " + item + " / " + iteration)
+		iteration += 1
+		if random.random() < 0.10:
+			print("Item " + str(iteration) + " / " + str(nbOfItems))
 
 		#Create dictionnary to stock all prices of items
 		pricePerWorld = {}
@@ -246,7 +248,6 @@ def getItemMarketable(category):
 	#Create list of itemID in category
 	itemsOfTheCategory = []
 
-	global iteration
 	iteration = 0
 	#Counter of iteration
 	while 1:
@@ -261,6 +262,9 @@ def getItemMarketable(category):
 		except:
 			print ("End of the category's scan, " + str(iteration) + " items marketable in the category")
 			break
+
+	global nbOfItems
+	nbOfItems = iteration
 	return itemsOfTheCategory
 
 
