@@ -32,7 +32,7 @@ coefMargin = 9 #(Coeff de marge souhaité)
 minimumSellPrice = 20000
 dayDelta = 1
 language = "fr"
-categoryWanted = "collectables" # (furniture, collectables)
+categoryWanted = "furniture" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
@@ -120,7 +120,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	#For each item
 	for item in itemsToAnalyze:
 		iteration += 1
-		if random.random() < 0.02:
+		if random.random() < 0.05:
 			percent = iteration / nbOfItems * 100
 			print("Progress.. " + str(int(percent)) + "%")
 
@@ -138,6 +138,10 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		except IndexError:
 			lastSell = 'null' #If item has never been sell
 			continue #Next Item
+		except TypeError:
+			lastSell = 'null'
+			print("Type error during get timestamp. Analyze resume..")
+			continue
 		
 		#If the item is sell before X days..
 		if verifySalePotential is True:
