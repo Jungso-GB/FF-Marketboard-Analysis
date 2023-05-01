@@ -1,5 +1,5 @@
 # IMPORTS
-from asyncore import write
+import asyncore
 import importlib
 import json
 from optparse import Values
@@ -32,7 +32,7 @@ coefMargin = 9 #(Coeff de marge souhaité)
 minimumSellPrice = 20000
 dayDelta = 1
 language = "fr"
-categoryWanted = "collectables" # (furniture, collectables)
+categoryWanted = "furniture" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
