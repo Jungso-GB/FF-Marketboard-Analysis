@@ -9,7 +9,7 @@ import os
 import shutil
 import csv
 import sys
-import pip._vendor.requests #Faire des requetes HTTP
+import requests #Faire des requetes HTTP
 import pandas as pd
 from datetime import datetime, timedelta
 import random
@@ -59,7 +59,7 @@ worldsList = {
 #Get proxy list to speed up the scan. (8 requests simulatenous / IP)
 def get_proxies():
 	urlProxies = 'https://free-proxy-list.net/'
-	response = pip._vendor.requests.get(urlProxies)
+	response = requests.get(urlProxies)
 	parser = fromstring(response.text) #Script HTML de la page complet
 	proxies = set()
 	for i in parser.xpath('//tbody/tr')[:20]:
@@ -76,11 +76,11 @@ proxy_pool = cycle(proxies)
 # JSON Item ID with name on different languages, par TeamCraft
 # To give name of object with ID in files.
 # A REPARER - Sert à donner le véritable nom au items, grâce à leur ID
-#itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
+#itemsID = requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
 
 #API
 universalisAPI = "https://universalis.app/api/v2/"
-allItemsMarketable = pip._vendor.requests.get(universalisAPI + "marketable").json()
+allItemsMarketable = requests.get(universalisAPI + "marketable").json()
 
 #Convert usWorldID to usWorldName
 usWorldName = ""
@@ -103,13 +103,13 @@ def getServerItemData(itemToData):
 	
 	dataItem = []
 	try:
-		dataItem = pip._vendor.requests.get(universalisAPI + str(usWorldID) + "/" + str(itemToData)).json() #proxies={"http": proxy, "https": proxy}
+		dataItem = requests.get(universalisAPI + str(usWorldID) + "/" + str(itemToData)).json() #proxies={"http": proxy, "https": proxy}
 	#Different Except possible
-	except pip._vendor.requests.exceptions.Timeout:
+	except requests.exceptions.Timeout:
 		print("Timeout - itemID:" + str(itemToData) + " World: " + str(usWorldName))
-	except pip._vendor.requests.exceptions.TooManyRedirects:
+	except requests.exceptions.TooManyRedirects:
 		print("TooManyRedirects - itemID:" + str(itemToData) + " World: " + str(usWorldName))
-	except pip._vendor.requests.exceptions.RequestException as e:
+	except requests.exceptions.RequestException as e:
 		print("RequestException ERROR - itemID:" + str(itemToData) + " World: " + str(usWorldName))
 	return dataItem
 
@@ -198,15 +198,15 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 
 			#On essaye d'avoir les données entière de l'item dans le monde, via un PROXY
 			try:
-				tempItemData = pip._vendor.requests.get(universalisAPI + str(worldID) + "/" + str(item)).json()#proxies={"http": proxy, "https": proxy}
+				tempItemData = requests.get(universalisAPI + str(worldID) + "/" + str(item)).json()#proxies={"http": proxy, "https": proxy}
 			#On y gère tous les Excepts générales
-			except pip._vendor.requests.exceptions.Timeout:
+			except requests.exceptions.Timeout:
 				print("Timeout - itemID:" + itemName + " World: " + worldName)
 				continue
-			except pip._vendor.requests.exceptions.TooManyRedirects:
+			except requests.exceptions.TooManyRedirects:
 				print("TooManyRedirects - itemID:" + itemName + " World: " + worldName)
 				continue
-			except pip._vendor.requests.exceptions.RequestException as e:
+			except requests.exceptions.RequestException as e:
 				print("RequestException ERROR - itemID:" + itemName + " World: " + worldName)
 				continue
 			try:
