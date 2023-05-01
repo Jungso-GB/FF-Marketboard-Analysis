@@ -32,7 +32,7 @@ coefMargin = 9 #(Coeff de marge souhaité)
 minimumSellPrice = 20000
 dayDelta = 1
 language = "fr"
-categoryWanted = "furniture" # (furniture, collectables)
+categoryWanted = "collectables" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
@@ -74,7 +74,9 @@ proxies = get_proxies()
 proxy_pool = cycle(proxies)
 
 # JSON Item ID with name on different languages, par TeamCraft
-itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
+# To give name of object with ID in files.
+# A REPARER - Sert à donner le véritable nom au items, grâce à leur ID
+#itemsID = pip._vendor.requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
 
 #API
 universalisAPI = "https://universalis.app/api/v2/"
@@ -183,8 +185,8 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		#SO, if the item has been already sell, in a delay of - X days and that the price's verification is good, SO...
 
 		#Take name of the item and put it in l'itemID.json
-		itemName = itemsID[str(item)][language]
-		priceGoalSuccess["Name"] = itemName
+		itemName = item #Format après correctif itemsID: itemsID[str(item)][language]
+		priceGoalSuccess["Name"] = itemName 
 
 		#Put price of us world'item in l'itemID.json at first
 		priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
