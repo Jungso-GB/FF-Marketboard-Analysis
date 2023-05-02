@@ -1,5 +1,4 @@
 # IMPORTS
-import asyncore
 import importlib
 import json
 from optparse import Values
@@ -9,8 +8,9 @@ import os
 import shutil
 import csv
 import sys
+import asyncio #
 import requests #Faire des requetes HTTP
-import pandas as pd
+import pandas
 from datetime import datetime, timedelta
 import random
 
@@ -244,7 +244,7 @@ def getItemMarketable(category):
 		url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/CollectablesShopItem.csv?raw=true'
 		columns = ["0"]
 		indexScan = '0'
-	itemsCategory = pd.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
+	itemsCategory = pandas.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
 	#Create JSON file only with different item for the category ; USELESS FOR SCRIPT, ONLY TO UNDERSTAND THE SCRIPT
 	with open("categoryData" +'.json', 'a', encoding='UTF-8') as file:
 		file.write(json.dumps(itemsCategory, indent=4))

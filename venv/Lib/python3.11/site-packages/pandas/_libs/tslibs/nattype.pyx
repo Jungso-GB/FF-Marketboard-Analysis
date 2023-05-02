@@ -1,3 +1,8 @@
+import inspect
+import warnings
+
+from pandas.util._exceptions import find_stack_level
+
 from cpython.datetime cimport (
     PyDate_Check,
     PyDateTime_Check,
@@ -10,6 +15,10 @@ from cpython.datetime cimport (
 import_datetime()
 from cpython.object cimport (
     Py_EQ,
+    Py_GE,
+    Py_GT,
+    Py_LE,
+    Py_LT,
     Py_NE,
     PyObject_RichCompare,
 )
@@ -124,7 +133,14 @@ cdef class _NaT(datetime):
                 return False
             if op == Py_NE:
                 return True
-            raise TypeError("Cannot compare NaT with datetime.date object")
+            warnings.warn(
+                "Comparison of NaT with datetime.date is deprecated in "
+                "order to match the standard library behavior. "
+                "In a future version these will be considered non-comparable.",
+                FutureWarning,
+                stacklevel=find_stack_level(inspect.currentframe()),
+            )
+            return False
 
         return NotImplemented
 
@@ -193,10 +209,9 @@ cdef class _NaT(datetime):
                     return result
 
                 # __rsub__ logic here
-                # TODO(cython3): remove this, move above code out of
-                # ``if not is_rsub`` block
+                # TODO(cython3): remove this, move above code out of ``if not is_rsub`` block
                 # timedelta64 - NaT we have to treat NaT as timedelta64
-                # for this to be meaningful, and the result is timedelta64
+                #  for this to be meaningful, and the result is timedelta64
                 result = np.empty(other.shape, dtype="timedelta64[ns]")
                 result.fill("NaT")
                 return result
@@ -230,8 +245,7 @@ cdef class _NaT(datetime):
                 result = np.empty(other.shape, dtype="timedelta64[ns]")
                 result.fill("NaT")
                 return result
-        # other cases are same, swap operands is allowed even though we subtract
-        # because this is NaT
+        # other cases are same, swap operands is allowed even though we subtract because this is NaT
         return self.__sub__(other)
 
     def __pos__(self):
@@ -259,11 +273,13 @@ cdef class _NaT(datetime):
         """
         Return a numpy.datetime64 object with 'ns' precision.
         """
-        return np.datetime64("NaT", "ns")
+        return np.datetime64('NaT', "ns")
 
     def to_numpy(self, dtype=None, copy=False) -> np.datetime64 | np.timedelta64:
         """
         Convert the Timestamp to a NumPy datetime64 or timedelta64.
+
+        .. versionadded:: 0.25.0
 
         With the default 'dtype', this is an alias method for `NaT.to_datetime64()`.
 
@@ -357,13 +373,18 @@ class NaTType(_NaT):
         cdef _NaT base
 
         base = _NaT.__new__(cls, 1, 1, 1)
-        base._value= NPY_NAT
+        base.value = NPY_NAT
 
         return base
 
     @property
-    def value(self) -> int:
-        return self._value
+    def freq(self):
+        warnings.warn(
+            "NaT.freq is deprecated and will be removed in a future version.",
+            FutureWarning,
+            stacklevel=find_stack_level(inspect.currentframe()),
+        )
+        return None
 
     def __reduce_ex__(self, protocol):
         # python 3.6 compat
@@ -548,17 +569,12 @@ class NaTType(_NaT):
         """
         Timestamp.utcfromtimestamp(ts)
 
-        Construct a timezone-aware UTC datetime from a POSIX timestamp.
-
-        Notes
-        -----
-        Timestamp.utcfromtimestamp behavior differs from datetime.utcfromtimestamp
-        in returning a timezone-aware object.
+        Construct a naive UTC datetime from a POSIX timestamp.
 
         Examples
         --------
         >>> pd.Timestamp.utcfromtimestamp(1584199972)
-        Timestamp('2020-03-14 15:32:52+0000', tz='UTC')
+        Timestamp('2020-03-14 15:32:52')
         """,
     )
     fromtimestamp = _make_error_func(
@@ -570,7 +586,7 @@ class NaTType(_NaT):
 
         Examples
         --------
-        >>> pd.Timestamp.fromtimestamp(1584199972)  # doctest: +SKIP
+        >>> pd.Timestamp.fromtimestamp(1584199972)
         Timestamp('2020-03-14 15:32:52')
 
         Note that the output may change depending on your local time.
@@ -672,6 +688,8 @@ class NaTType(_NaT):
         ----------
         ordinal : int
             Date corresponding to a proleptic Gregorian ordinal.
+        freq : str, DateOffset
+            Offset to apply to the Timestamp.
         tz : str, pytz.timezone, dateutil.tz.tzfile or None
             Time zone for the Timestamp.
 
@@ -1188,7 +1206,6 @@ default 'raise'
         NaT
         """,
     )
-
     @property
     def tz(self) -> None:
         return None
@@ -1197,22 +1214,6 @@ default 'raise'
     def tzinfo(self) -> None:
         return None
 
-    def as_unit(self, str unit, bint round_ok=True) -> "NaTType":
-        """
-        Convert the underlying int64 representaton to the given unit.
-
-        Parameters
-        ----------
-        unit : {"ns", "us", "ms", "s"}
-        round_ok : bool, default True
-            If False and the conversion requires rounding, raise.
-
-        Returns
-        -------
-        Timestamp
-        """
-        return c_NaT
-
 
 c_NaT = NaTType()  # C-visible
 NaT = c_NaT        # Python-visible
@@ -1220,14 +1221,14 @@ NaT = c_NaT        # Python-visible
 
 # ----------------------------------------------------------------------
 
-cdef bint checknull_with_nat(object val):
+cdef inline bint checknull_with_nat(object val):
     """
     Utility to check if a value is a nat or not.
     """
     return val is None or util.is_nan(val) or val is c_NaT
 
 
-cdef bint is_dt64nat(object val):
+cdef inline bint is_dt64nat(object val):
     """
     Is this a np.datetime64 object np.datetime64("NaT").
     """
@@ -1236,7 +1237,7 @@ cdef bint is_dt64nat(object val):
     return False
 
 
-cdef bint is_td64nat(object val):
+cdef inline bint is_td64nat(object val):
     """
     Is this a np.timedelta64 object np.timedelta64("NaT").
     """
