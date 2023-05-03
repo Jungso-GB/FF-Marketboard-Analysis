@@ -2,15 +2,13 @@ import os
 import shutil
 #If the folder 'items' doesn't exist, we create it, and go in
 def itemsFolderVerification():
-	print("itemsFolder")
-    #Absolute path of parent direct
-	parent_dir = os.path.abspath(os.path.join(os.getcwd(), os.pardir))
-	print(str(parent_dir))
+    
+	parent_dir = os.path.abspath(os.path.join(os.getcwd()))
+
 	#Relative path of "items" folder
-	filepathItems = os.path.join(parent_dir, '/items/')
-	print(str(filepathItems))
+	filepathItems = os.path.join(parent_dir + '/items/')
+	print(filepathItems)
 	#filepathItems = '../items/'
- 
 	#If doesn't exist
 	if os.path.exists(filepathItems) == False:
 		#Create folder with 511 permission
