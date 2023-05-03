@@ -177,7 +177,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 				lastSecondSellPrice = serverItemData['recentHistory'][1]["pricePerUnit"]
 			except IndexError:
 				lastSecondSellPrice = 'null' #The item has not been selling 2 times
-				continue #Next Item
+				continue #Next Item 
 			if ((lastSecondSellPrice * 1.2) < (goalPrice * coefMargin)):
 				continue #Next Item
 				
