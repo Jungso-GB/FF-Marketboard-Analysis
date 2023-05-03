@@ -76,7 +76,7 @@ proxy_pool = cycle(proxies)
 # JSON Item ID with name on different languages, par TeamCraft
 # To give name of object with ID in files.
 # A REPARER - Sert à donner le véritable nom au items, grâce à leur ID
-#itemsID = requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/apps/client/src/assets/data/items.json", verify=True).json()
+itemsID = requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/libs/data/src/lib/json/items.json", verify=True).json()
 
 #API
 universalisAPI = "https://universalis.app/api/v2/"
@@ -185,7 +185,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		#SO, if the item has been already sell, in a delay of - X days and that the price's verification is good, SO...
 
 		#Take name of the item and put it in l'itemID.json
-		itemName = item #Format après correctif itemsID: itemsID[str(item)][language]
+		itemName = itemsID[str(item)][language] 
 		priceGoalSuccess["Name"] = itemName 
 
 		#Put price of us world'item in l'itemID.json at first
