@@ -36,7 +36,7 @@
 
 ## About The Project
 
-![Screen Shot](images/screenshot.png)
+![Screen Shot](img/screen1.png)
 
 This is a new script in Python to analyze the Marketboard in one click !
 
@@ -118,10 +118,8 @@ Distributed under the MIT License. See [LICENSE](https://github.com/Sernoz/FF-Ma
 
 ## Authors
 
-* **GREGOIRE Brice** - ** - [GREGOIRE Brice](https://github.com/Sernoz/) - *Sernoz*
+* [GREGOIRE Brice](https://github.com/Sernoz/) 
 
 ## Acknowledgements
 
 * [Sernoz](https://github.com/Sernoz/)
-* []()
-* []()
