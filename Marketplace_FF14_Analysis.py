@@ -3,22 +3,18 @@ import importlib
 import json
 from optparse import Values
 import time
-import calendar
-import os
-import shutil
-import csv
-import sys
-import asyncio #
-import requests #Faire des requetes HTTP
+import asyncio #Simulateous requests
+import requests #Requests HTTP
 import pandas
 from datetime import datetime, timedelta
 import random
 
+#Import program
+import utils.proxy as px
+import utils.filesVerification as files
+
 #Import for Proxies Cycle; 
-#pip3 install lxml
-from lxml.html import fromstring
 from itertools import cycle
-import traceback
 
 #Counter Scan Research
 start = time.time()
@@ -28,11 +24,11 @@ iteration = 0
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
-coefMargin = 9 #(Coeff de marge souhaité)
-minimumSellPrice = 20000
-dayDelta = 1
+coefMargin = 2 #(Coeff de marge souhaité)
+minimumSellPrice = 2
+dayDelta = 100
 language = "fr"
-categoryWanted = "none" # (furniture, collectables)
+categoryWanted = "collectables" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
@@ -56,26 +52,11 @@ worldsList = {
 	"403" : "Raiden",# LIGHT
 }
 
-#Get proxy list to speed up the scan. (8 requests simulatenous / IP)
-def get_proxies():
-	urlProxies = 'https://free-proxy-list.net/'
-	response = requests.get(urlProxies)
-	parser = fromstring(response.text) #Script HTML de la page complet
-	proxies = set()
-	for i in parser.xpath('//tbody/tr')[:20]:
-		if i.xpath('.//td[7][contains(text(),"yes")]'): #If HTTPS is "yes"
-		#Grabbing IP and corresponding PORT
-			proxy = ":".join([i.xpath('.//td[1]/text()')[0], i.xpath('.//td[2]/text()')[0]])
-			proxies.add(proxy)
-	return proxies
-
 #Initialisation Proxy
-proxies = get_proxies()
+proxies = px.get_proxies()
 proxy_pool = cycle(proxies)
 
-# JSON Item ID with name on different languages, par TeamCraft
-# To give name of object with ID in files.
-# A REPARER - Sert à donner le véritable nom au items, grâce à leur ID
+# To give name of object with ID in files, thanks to TeamCraft
 itemsID = requests.get("https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/master/libs/data/src/lib/json/items.json", verify=True).json()
 
 #API
@@ -89,17 +70,7 @@ for worldID, worldName in worldsList.items():
 		usWorldName = str(worldName)
 		break
 
-#If the folder 'items' doesn't exist, we create it, and go in
-def itemsFolderVerification():
-	filepathItems = './items/'
-	if os.path.exists(filepathItems) == False:
-		os.makedirs(filepathItems, mode = 511, exist_ok= False)
-	else:
-		shutil.rmtree(filepathItems)
-		os.makedirs(filepathItems, mode = 511, exist_ok= False)
-	os.chdir(filepathItems)
-
-#Get Current Taxes on Serveur
+#Get Current Taxes on Server
 def getCurrentTaxes():
 	currentTaxes = requests.get(universalisAPI + "tax-rates?world=" + str(usWorldID)).json()
 	print("All current taxes by city in your world:")
@@ -321,8 +292,8 @@ def getItemMarketable(category):
 
 #MAIN SCRIPT
 def main():
-	itemsFolderVerification()
-	getCurrentTaxes()
+	files.itemsFolderVerification()
+	#getCurrentTaxes()
 	itemsMarketableToAnalyze = getItemMarketable(categoryWanted)
 	analyzeItems(itemsMarketableToAnalyze, worldsList)
 main()
