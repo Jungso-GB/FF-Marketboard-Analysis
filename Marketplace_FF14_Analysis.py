@@ -140,7 +140,7 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	for item in itemsToAnalyze:
 		#Get percentage of progress analyse
 		iteration += 1
-		if random.random() < 0.04:
+		if random.random() < 0.02:
 			percent = iteration / nbOfItems * 100
 			print("Progress.. " + str(int(percent)) + "%")
 
@@ -322,7 +322,7 @@ def getItemMarketable(category):
 #MAIN SCRIPT
 def main():
 	itemsFolderVerification()
-	#getCurrentTaxes()
+	getCurrentTaxes()
 	itemsMarketableToAnalyze = getItemMarketable(categoryWanted)
 	analyzeItems(itemsMarketableToAnalyze, worldsList)
 main()
