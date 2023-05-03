@@ -32,7 +32,7 @@ coefMargin = 9 #(Coeff de marge souhaité)
 minimumSellPrice = 20000
 dayDelta = 1
 language = "fr"
-categoryWanted = "furniture" # (furniture, collectables)
+categoryWanted = "none" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
@@ -99,6 +99,7 @@ def itemsFolderVerification():
 		os.makedirs(filepathItems, mode = 511, exist_ok= False)
 	os.chdir(filepathItems)
 
+#Get all item data
 def getServerItemData(itemToData):
 	
 	dataItem = []
@@ -115,14 +116,17 @@ def getServerItemData(itemToData):
 
 
 #Function To Analyze items, with WorldList
+
 def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	print("Starting of the analyze...")
 	iteration = 0
+	print("Number of items to analyze: " + str(nbOfItems))
 
 	#For each item
 	for item in itemsToAnalyze:
+		#Get percentage of progress analyse
 		iteration += 1
-		if random.random() < 0.05:
+		if random.random() < 0.04:
 			percent = iteration / nbOfItems * 100
 			print("Progress.. " + str(int(percent)) + "%")
 
@@ -132,9 +136,12 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 
 		#Take a new proxy for each world, to speed up the scan
 		#proxy = next(proxy_pool)
+  
+
 		#Take history of the item in each world
 		serverItemData = getServerItemData(item)
-		#Take last timestamp in us world
+  
+		#Take last sell timestamp in us world 
 		try:
 			lastSell = serverItemData['recentHistory'][0]["timestamp"]
 		except IndexError:
@@ -153,8 +160,13 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 				lastSecondSellTime = 'null' #The item has not been selling 2 times
 				continue #Next ITem
 
-			if (datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta))) and (datetime.fromtimestamp(lastSecondSellTime) < (datetime.now() - timedelta(days=dayDelta * 1.5))): #Verify if the item has been selling one time in period and second time in period * 1,5
-				continue #Next Item
+			#Item is selling 2 times or more
+   
+			#Verify if the item has been selling one time in period and second time in period * 1,5
+			if (datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta))) and (datetime.fromtimestamp(lastSecondSellTime) < (datetime.now() - timedelta(days=dayDelta * 1.5))): 
+				continue #Next Item, because it's not selling 2 times in perdiod that we have define thanks to dayDelta
+		
+  		#If "verifySalePotential" is False, check that item has been sell since dayDelta
 		else:
 			if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
 				continue #Next Item
@@ -164,11 +176,11 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		
 		#Verify pricing in world we want
 		try:
-			goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Je détermine mon prix objectif
-		except IndexError: #Si l'item n'a jamais eu de prix défini
+			goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Define goal price
+		except IndexError: #If item has never been price
 			goalPrice = 'null'
 			continue #Next Item
-		if goalPrice * coefMargin <= minimumSellPrice: #Si le prix de vente n'est pas au minimum celui souhaité
+		if goalPrice * coefMargin <= minimumSellPrice: #If item is not at minimum price
 			continue #Next Item
 
 		#Verify the second item price
@@ -191,15 +203,16 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		#Put price of us world'item in l'itemID.json at first
 		priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
 
-		#On va dans chaque monde
+		#Go in each world
 		for worldID, worldName in worldsToAnalyze.items():
 			#proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
 			tempItemData = []
 
-			#On essaye d'avoir les données entière de l'item dans le monde, via un PROXY
+			#Have data item in the world
 			try:
 				tempItemData = requests.get(universalisAPI + str(worldID) + "/" + str(item)).json()#proxies={"http": proxy, "https": proxy}
-			#On y gère tous les Excepts générales
+			
+   			#Manage all exceptions
 			except requests.exceptions.Timeout:
 				print("Timeout - itemID:" + itemName + " World: " + worldName)
 				continue
@@ -210,12 +223,12 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 				print("RequestException ERROR - itemID:" + itemName + " World: " + worldName)
 				continue
 			try:
-				price = tempItemData['listings'][0]["pricePerUnit"] #Prix de la dernière vente,
-			except IndexError: #Si y'a jamais eu de vente, et donc le prix de la dernière vente n'existe pas.
+				price = tempItemData['listings'][0]["pricePerUnit"] #Price of last sell in the world
+			except IndexError: #If object has never been sold
 				price = 'null'
 				continue
 
-			#Je la stocke dans un dictionnaire, où chaque prix de chaque monde sera indiqué.
+			#Price in dictionnary, where all price of all worlds will be save
 			pricePerWorld[worldName] = price
 		
 	#Once price of each world in pricePerWorld[X], we verify if we have the margin
@@ -233,27 +246,43 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 			file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
 
 def getItemMarketable(category):
+	global nbOfItems #Number of item to analyse, after this function
+ 
+    #Create a JSON with all items marketable  ; USELESS FOR SCRIPT, ONLY TO UNDERSTAND
+	with open("allItemsMarketable" +'.json', 'a', encoding='UTF-8') as file:
+		file.write(json.dumps(allItemsMarketable, indent=4))
+    
 	#Reading CSV's category file with itemID, only for the columns with ID
-	if category == "furniture":
+	if category == "furniture": #FURNITURE
 		print("Category furniture selected")
 		url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/FurnitureCatalogItemList.csv?raw=true'
 		columns = ["1"]
 		indexScan = '1'
-	elif category == "collectables":
+		itemsCategory = pandas.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
+		#Create JSON file only with different item for the category ; USELESS FOR SCRIPT, ONLY TO UNDERSTAND
+		with open("categoryData" +'.json', 'a', encoding='UTF-8') as file:
+			file.write(json.dumps(itemsCategory, indent=4))
+   
+	elif category == "collectables": #COLLECTABLES
 		print("Category Collectable Items Shop selected")
 		url = 'https://github.com/xivapi/ffxiv-datamining/blob/master/csv/CollectablesShopItem.csv?raw=true'
 		columns = ["0"]
 		indexScan = '0'
-	itemsCategory = pandas.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
-	#Create JSON file only with different item for the category ; USELESS FOR SCRIPT, ONLY TO UNDERSTAND THE SCRIPT
-	with open("categoryData" +'.json', 'a', encoding='UTF-8') as file:
-		file.write(json.dumps(itemsCategory, indent=4))
-	with open("allItemsMarketable" +'.json', 'a', encoding='UTF-8') as file:
-		file.write(json.dumps(allItemsMarketable, indent=4))
+		itemsCategory = pandas.read_csv(url, usecols=columns, on_bad_lines='skip').to_dict(orient='list')
+		#Create JSON file only with different item for the category ; USELESS FOR SCRIPT, ONLY TO UNDERSTAND
+		with open("categoryData" +'.json', 'a', encoding='UTF-8') as file:
+			file.write(json.dumps(itemsCategory, indent=4))
   
+	else: #If any category is define
+		print("No category has been selected..")
+		print("/!/ Analyse of items marketable of FFXIV")
+		print("The duration of the scan will be more longer !")
+		nbOfItems = len(allItemsMarketable)
+		return allItemsMarketable
 
+    
 	#Create list of itemID in category
-	itemsOfTheCategory = []
+	itemsMarketableCategory = []
 
 	iteration = 0
 	globalItems = 0
@@ -264,17 +293,16 @@ def getItemMarketable(category):
 		try:
 			currentScanItemID = itemsCategory[indexScan][iteration]
    
-			#If itemScan is and real ID and is in the list of all item marketable
+			#If itemScan is a real ID and is in the list of all item marketable
 			if (currentScanItemID != "Item" or "" or 0) and (int(currentScanItemID) in allItemsMarketable):
-				itemsOfTheCategory.append(currentScanItemID)
+				itemsMarketableCategory.append(currentScanItemID)
 				globalItems = globalItems + 1
 		except:
 			print ("End of the category's scan, " + str(iteration) + " items marketable in the category")
 			break
 
-	global nbOfItems
 	nbOfItems = globalItems
-	return itemsOfTheCategory
+	return itemsMarketableCategory 
 
 
 #MAIN SCRIPT
@@ -287,4 +315,4 @@ main()
 #Après que chaque item est été regardé 
  #End of the script
 end = time.time()
-print("Durée du scan: " + str(int(round(end - start) / 60)) + "m")
+print("Scan duration: " + str(int(round(end - start) / 60)) + "m")
