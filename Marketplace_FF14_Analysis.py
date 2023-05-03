@@ -99,6 +99,21 @@ def itemsFolderVerification():
 		os.makedirs(filepathItems, mode = 511, exist_ok= False)
 	os.chdir(filepathItems)
 
+#Get Current Taxes on Serveur
+def getCurrentTaxes():
+	currentTaxes = requests.get(universalisAPI + "tax-rates?world=" + str(usWorldID)).json()
+	print("All current taxes by city in your world:")
+	
+ 	#USELESS FOR SCRIPT, JUST TO UNDERSTAND
+	with open("currentTaxes" +'.json', 'a', encoding='UTF-8') as file: 
+		file.write(json.dumps(currentTaxes, indent=4))
+ 	
+  	#Print all taxes
+		for city, taxes in currentTaxes.keys():
+			print(str(city) + ": " + str(taxes) + "%")
+	
+
+
 #Get all item data
 def getServerItemData(itemToData):
 	
@@ -116,7 +131,6 @@ def getServerItemData(itemToData):
 
 
 #Function To Analyze items, with WorldList
-
 def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	print("Starting of the analyze...")
 	iteration = 0
@@ -308,6 +322,7 @@ def getItemMarketable(category):
 #MAIN SCRIPT
 def main():
 	itemsFolderVerification()
+	#getCurrentTaxes()
 	itemsMarketableToAnalyze = getItemMarketable(categoryWanted)
 	analyzeItems(itemsMarketableToAnalyze, worldsList)
 main()
