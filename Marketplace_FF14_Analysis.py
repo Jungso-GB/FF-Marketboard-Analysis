@@ -3,11 +3,11 @@ import importlib
 import json
 from optparse import Values
 import time
-import asyncio #Simulateous requests
 import requests #Requests HTTP
 import pandas
 from datetime import datetime, timedelta
 import random
+import asyncio
 
 #Import program
 import utils.proxy as px
@@ -103,7 +103,7 @@ def getServerItemData(itemToData):
 
 
 #Function To Analyze items, with WorldList
-def analyzeItems(itemsToAnalyze, worldsToAnalyze):
+async def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	print("Starting of the analyze...")
 	iteration = 0
 	print("Number of items to analyze: " + str(nbOfItems))
@@ -112,12 +112,11 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 	for item in itemsToAnalyze:
 		#Get percentage of progress analyse
 		iteration += 1
-		if random.random() < 0.02:
+		if random.random() < 0.03:
 			percent = iteration / nbOfItems * 100
 			print("Progress.. " + str(int(percent)) + "%")
 
 		#Create dictionnary to stock all prices of items
-		pricePerWorld = {}
 		priceGoalSuccess = {}
 
 		#Take a new proxy for each world, to speed up the scan
@@ -190,7 +189,8 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
 
 # ANALYZER WORLD
-		aWorlds.analyzer(worldsToAnalyze, pricePerWorld, item, itemName, universalisAPI)
+		pricePerWorld = {}
+		pricePerWorld = await aWorlds.analyzer(worldsToAnalyze, item, universalisAPI)
 		
 	#Once price of each world in pricePerWorld[X], we verify if we have the margin
 		for world, price in pricePerWorld.items():
@@ -271,7 +271,8 @@ def main():
 	files.itemsFolderVerification()
 	#getCurrentTaxes()
 	itemsMarketableToAnalyze = getItemMarketable(categoryWanted)
-	analyzeItems(itemsMarketableToAnalyze, worldsList)
+	#analyzeItems(itemsMarketableToAnalyze, worldsList)
+	asyncio.run(analyzeItems(itemsMarketableToAnalyze, worldsList))
 main()
 
 #Après que chaque item est été regardé 
