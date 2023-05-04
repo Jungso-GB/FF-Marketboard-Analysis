@@ -24,11 +24,11 @@ iteration = 0
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
-coefMargin = 2 #(Coeff de marge souhaité)
-minimumSellPrice = 2
-dayDelta = 100
+coefMargin = 6 #(Coeff de marge souhaité)
+minimumSellPrice = 2000
+dayDelta = 2
 language = "fr"
-categoryWanted = "collectables" # (furniture, collectables)
+categoryWanted = "none" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
@@ -260,7 +260,7 @@ def getItemMarketable(category):
   
 	else: #If any category is define
 		print("No category has been selected..")
-		print("/!/ Analyse of items marketable of FFXIV")
+		print("/!/ Analyse of ALL items marketable of FFXIV")
 		print("The duration of the scan will be more longer !")
 		nbOfItems = len(allItemsMarketable)
 		return allItemsMarketable
@@ -283,7 +283,7 @@ def getItemMarketable(category):
 				itemsMarketableCategory.append(currentScanItemID)
 				globalItems = globalItems + 1
 		except:
-			print ("End of the category's scan, " + str(iteration) + " items marketable in the category")
+			print ("End of the category's scan, " + str(globalItems) + " items marketable in the category")
 			break
 
 	nbOfItems = globalItems
