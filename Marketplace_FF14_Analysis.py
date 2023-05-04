@@ -12,6 +12,7 @@ import random
 #Import program
 import utils.proxy as px
 import utils.filesVerification as files
+import utils.analyzerWorlds as aWorlds
 
 #Import for Proxies Cycle; 
 from itertools import cycle
@@ -28,7 +29,7 @@ coefMargin = 6 #(Coeff de marge souhaité)
 minimumSellPrice = 2000
 dayDelta = 2
 language = "fr"
-categoryWanted = "none" # (furniture, collectables)
+categoryWanted = "furniture" # (furniture, collectables)
 verifySalePotential = True
 
 # WORLDS
@@ -188,33 +189,8 @@ def analyzeItems(itemsToAnalyze, worldsToAnalyze):
 		#Put price of us world'item in l'itemID.json at first
 		priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
 
-		#Go in each world
-		for worldID, worldName in worldsToAnalyze.items():
-			#proxy = next(proxy_pool) #Prendre un nouveau proxy à chaque test, pour augmenter la rapidité
-			tempItemData = []
-
-			#Have data item in the world
-			try:
-				tempItemData = requests.get(universalisAPI + str(worldID) + "/" + str(item)).json()#proxies={"http": proxy, "https": proxy}
-			
-   			#Manage all exceptions
-			except requests.exceptions.Timeout:
-				print("Timeout - itemID:" + itemName + " World: " + worldName)
-				continue
-			except requests.exceptions.TooManyRedirects:
-				print("TooManyRedirects - itemID:" + itemName + " World: " + worldName)
-				continue
-			except requests.exceptions.RequestException as e:
-				print("RequestException ERROR - itemID:" + itemName + " World: " + worldName)
-				continue
-			try:
-				price = tempItemData['listings'][0]["pricePerUnit"] #Price of last sell in the world
-			except IndexError: #If object has never been sold
-				price = 'null'
-				continue
-
-			#Price in dictionnary, where all price of all worlds will be save
-			pricePerWorld[worldName] = price
+# ANALYZER WORLD
+		aWorlds.analyzer(worldsToAnalyze, pricePerWorld, item, itemName, universalisAPI)
 		
 	#Once price of each world in pricePerWorld[X], we verify if we have the margin
 		for world, price in pricePerWorld.items():
