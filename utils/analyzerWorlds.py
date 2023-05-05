@@ -4,8 +4,12 @@ import aiohttp
 
 #Do each request
 async def fetch(session, url):
-    async with session.get(url) as response:
-        return await response.json()
+    try:
+        async with session.get(url) as response:
+            return await response.json()
+    except aiohttp.client_exceptions.ContentTypeError as e:
+        print(f"HTTP Content Type error: {e}")
+        return 'null'
     
 #Function to make asynchronous multi-requests
 async def fetch_all(session, urls):

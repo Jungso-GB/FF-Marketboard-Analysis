@@ -8,6 +8,7 @@ import pandas
 from datetime import datetime, timedelta
 import random
 import asyncio
+from tqdm import tqdm
 
 #Import program
 import utils.proxy as px
@@ -25,8 +26,8 @@ iteration = 0
 
 # The modify variables
 usWorldID = 97 #(Ragnarok)
-coefMargin = 6 #(Coeff de marge souhaité)
-minimumSellPrice = 2000
+coefMargin = 9 #(Coeff de marge souhaité)
+minimumSellPrice = 20000
 dayDelta = 2
 language = "fr"
 categoryWanted = "furniture" # (furniture, collectables)
@@ -101,110 +102,123 @@ def getServerItemData(itemToData):
 		print("RequestException ERROR - itemID:" + str(itemToData) + " World: " + str(usWorldName))
 	return dataItem
 
-
 #Function To Analyze items, with WorldList
-async def analyzeItems(itemsToAnalyze, worldsToAnalyze):
+async def analyzeItems(itemsToAnalyze, worldsToAnalyze, total_iterations):
 	print("Starting of the analyze...")
-	iteration = 0
 	print("Number of items to analyze: " + str(nbOfItems))
+	
+	#TQDM to have progress bar of scan
+	with tqdm(total=total_iterations, unit="item", bar_format='{l_bar}{bar}{r_bar}') as pbar:
+		pbar.set_description("Analyzing items")
+		start_time = time.time()
 
-	#For each item
-	for item in itemsToAnalyze:
-		#Get percentage of progress analyse
-		iteration += 1
-		if random.random() < 0.03:
-			percent = iteration / nbOfItems * 100
-			print("Progress.. " + str(int(percent)) + "%")
+		#START OF SCAN
+		#For each item
+		for i, item in enumerate(itemsToAnalyze, 1):
+			pbar.update(1)
 
-		#Create dictionnary to stock all prices of items
-		priceGoalSuccess = {}
-
-		#Take a new proxy for each world, to speed up the scan
-		#proxy = next(proxy_pool)
-  
-
-		#Take history of the item in each world
-		serverItemData = getServerItemData(item)
-  
-		#Take last sell timestamp in us world 
-		try:
-			lastSell = serverItemData['recentHistory'][0]["timestamp"]
-		except IndexError:
-			lastSell = 'null' #If item has never been sell
-			continue #Next Item
-		except TypeError:
-			lastSell = 'null'
-			print("Type error during get timestamp. Analyze resume..")
-			continue
+			#10% chance to update time remaining
+			if random.random() < 0.10:
+				#Calcul time remaining
+				elapsed_time = time.time() - start_time
+				time_per_iteration = elapsed_time / i
+				remaining_iterations = total_iterations - i
+				remaining_time = remaining_iterations * time_per_iteration
+				remaining_minutes, remaining_seconds = divmod(remaining_time, 60)
+				
+    			#Format and show time left
+				remaining_time_formatted = f"{int(remaining_minutes):02d}:{int(remaining_seconds):02d}"
+				pbar.set_postfix({"Time left": remaining_time_formatted})
 		
-		#If the item is sell before X days..
-		if verifySalePotential is True:
+			#Create dictionnary to stock all prices of items
+			priceGoalSuccess = {}
+
+			#Take a new proxy for each world, to speed up the scan
+			#proxy = next(proxy_pool)
+	
+
+			#Take history of the item in each world
+			serverItemData = getServerItemData(item)
+	
+			#Take last sell timestamp in us world 
 			try:
-				lastSecondSellTime = serverItemData['recentHistory'][1]["timestamp"]
+				lastSell = serverItemData['recentHistory'][0]["timestamp"]
 			except IndexError:
-				lastSecondSellTime = 'null' #The item has not been selling 2 times
-				continue #Next ITem
+				lastSell = 'null' #If item has never been sell
+				continue #Next Item
+			except TypeError:
+				lastSell = 'null'
+				print("Type error during get timestamp. Analyze resume..")
+				continue
+			
+			#If the item is sell before X days..
+			if verifySalePotential is True:
+				try:
+					lastSecondSellTime = serverItemData['recentHistory'][1]["timestamp"]
+				except IndexError:
+					lastSecondSellTime = 'null' #The item has not been selling 2 times
+					continue #Next ITem
 
-			#Item is selling 2 times or more
-   
-			#Verify if the item has been selling one time in period and second time in period * 1,5
-			if (datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta))) and (datetime.fromtimestamp(lastSecondSellTime) < (datetime.now() - timedelta(days=dayDelta * 1.5))): 
-				continue #Next Item, because it's not selling 2 times in perdiod that we have define thanks to dayDelta
-		
-  		#If "verifySalePotential" is False, check that item has been sell since dayDelta
-		else:
-			if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
+				#Item is selling 2 times or more
+	
+				#Verify if the item has been selling one time in period and second time in period * 1,5
+				if (datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta))) and (datetime.fromtimestamp(lastSecondSellTime) < (datetime.now() - timedelta(days=dayDelta * 1.5))): 
+					continue #Next Item, because it's not selling 2 times in perdiod that we have define thanks to dayDelta
+			
+			#If "verifySalePotential" is False, check that item has been sell since dayDelta
+			else:
+				if datetime.fromtimestamp(lastSell) < (datetime.now() - timedelta(days=dayDelta)):
+					continue #Next Item
+
+			#Convert timestamp
+			lastSell = datetime.fromtimestamp(lastSell) #FORMAT 2022-10-05 05:25:18
+			
+			#Verify pricing in world we want
+			try:
+				goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Define goal price
+			except IndexError: #If item has never been price
+				goalPrice = 'null'
+				continue #Next Item
+			if goalPrice * coefMargin <= minimumSellPrice: #If item is not at minimum price
 				continue #Next Item
 
-		#Convert timestamp
-		lastSell = datetime.fromtimestamp(lastSell) #FORMAT 2022-10-05 05:25:18
-		
-		#Verify pricing in world we want
-		try:
-			goalPrice = serverItemData['recentHistory'][0]["pricePerUnit"] / coefMargin #Define goal price
-		except IndexError: #If item has never been price
-			goalPrice = 'null'
-			continue #Next Item
-		if goalPrice * coefMargin <= minimumSellPrice: #If item is not at minimum price
-			continue #Next Item
+			#Verify the second item price
+			if verifySalePotential is True:
+				try:
+					lastSecondSellPrice = serverItemData['recentHistory'][1]["pricePerUnit"]
+				except IndexError:
+					lastSecondSellPrice = 'null' #The item has not been selling 2 times
+					continue #Next Item 
+				if ((lastSecondSellPrice * 1.2) < (goalPrice * coefMargin)):
+					continue #Next Item
+					
 
-		#Verify the second item price
-		if verifySalePotential is True:
-			try:
-				lastSecondSellPrice = serverItemData['recentHistory'][1]["pricePerUnit"]
-			except IndexError:
-				lastSecondSellPrice = 'null' #The item has not been selling 2 times
-				continue #Next Item 
-			if ((lastSecondSellPrice * 1.2) < (goalPrice * coefMargin)):
-				continue #Next Item
-				
+			#SO, if the item has been already sell, in a delay of - X days and that the price's verification is good, SO...
 
-		#SO, if the item has been already sell, in a delay of - X days and that the price's verification is good, SO...
+			#Take name of the item and put it in l'itemID.json
+			itemName = itemsID[str(item)][language] 
+			priceGoalSuccess["Name"] = itemName 
 
-		#Take name of the item and put it in l'itemID.json
-		itemName = itemsID[str(item)][language] 
-		priceGoalSuccess["Name"] = itemName 
+			#Put price of us world'item in l'itemID.json at first
+			priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
 
-		#Put price of us world'item in l'itemID.json at first
-		priceGoalSuccess[usWorldName] = round(goalPrice * coefMargin)
-
-# ANALYZER WORLD
-		pricePerWorld = {}
-		pricePerWorld = await aWorlds.analyzer(worldsToAnalyze, item, universalisAPI)
-		
-	#Once price of each world in pricePerWorld[X], we verify if we have the margin
-		for world, price in pricePerWorld.items():
-			if (price <= goalPrice):
-				#Put in a JSON
-				priceGoalSuccess[world] = price
-		
-  		#If no world have interresting price 
-		if len(priceGoalSuccess.keys()) <= 2:
-			continue #Next item
-				
-	#Create the itemID.json where put the name, usWorld's price and the multiple world where the name and price associated
-		with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
-			file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
+	# ANALYZER WORLD
+			pricePerWorld = {}
+			pricePerWorld = await aWorlds.analyzer(worldsToAnalyze, item, universalisAPI)
+			
+		#Once price of each world in pricePerWorld[X], we verify if we have the margin
+			for world, price in pricePerWorld.items():
+				if (price <= goalPrice):
+					#Put in a JSON
+					priceGoalSuccess[world] = price
+			
+			#If no world have interresting price 
+			if len(priceGoalSuccess.keys()) <= 2:
+				continue #Next item
+					
+		#Create the itemID.json where put the name, usWorld's price and the multiple world where the name and price associated
+			with open(str(item) +'.json', 'a', encoding='UTF-8') as file:
+				file.write(json.dumps(priceGoalSuccess, indent=4, ensure_ascii=False))
 
 def getItemMarketable(category):
 	global nbOfItems #Number of item to analyse, after this function
@@ -271,8 +285,11 @@ def main():
 	files.itemsFolderVerification()
 	#getCurrentTaxes()
 	itemsMarketableToAnalyze = getItemMarketable(categoryWanted)
+	
+	#Iteration for scan progress
+	total_iterations = len(itemsMarketableToAnalyze)
 	#analyzeItems(itemsMarketableToAnalyze, worldsList)
-	asyncio.run(analyzeItems(itemsMarketableToAnalyze, worldsList))
+	asyncio.run(analyzeItems(itemsMarketableToAnalyze, worldsList, total_iterations))
 main()
 
 #Après que chaque item est été regardé 
